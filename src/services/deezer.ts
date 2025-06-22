@@ -174,22 +174,34 @@ class DeezerService {
       url.searchParams.append(key, value);
     });
 
-    const response = await fetch(url.toString(), {
-      method: 'GET',
-      headers: {
-        'X-RapidAPI-Key': this.apiKey,
-        'X-RapidAPI-Host': 'deezerdevs-deezer.p.rapidapi.com',
-      },
-    });
+    try {
+      const response = await fetch(url.toString(), {
+        method: 'GET',
+        headers: {
+          'X-RapidAPI-Key': this.apiKey,
+          'X-RapidAPI-Host': 'deezerdevs-deezer.p.rapidapi.com',
+        },
+        timeout: 10000, // 10 second timeout
+      });
 
-    if (!response.ok) {
-      if (response.status === 429) {
-        throw new Error('Rate limit exceeded. Please try again later.');
+      if (!response.ok) {
+        if (response.status === 429) {
+          throw new Error('Rate limit exceeded. Please try again later.');
+        }
+        if (response.status >= 500) {
+          throw new Error('Server error. Please try again later.');
+        }
+        throw new Error(`API request failed: ${response.status} ${response.statusText}`);
       }
-      throw new Error(`API request failed: ${response.status} ${response.statusText}`);
-    }
 
-    return response.json();
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      if (error instanceof TypeError && error.message.includes('fetch')) {
+        throw new Error('Network error. Please check your connection and try again.');
+      }
+      throw error;
+    }
   }
 
   async searchSongs(query: string, limit: number = 25): Promise<DeezerSearchResponse> {

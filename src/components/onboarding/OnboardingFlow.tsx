@@ -41,7 +41,7 @@ export const OnboardingFlow: React.FC = () => {
     switch (currentStep) {
       case 0: return true; // Welcome screen
       case 1: return selectedGenres.length >= 3; // Genres (minimum 3)
-      case 2: return selectedSongs.length === 5; // Songs (exactly 5)
+      case 2: return true; // Songs (can skip this step)
       case 3: return true; // Complete screen
       default: return false;
     }
@@ -234,17 +234,31 @@ export const OnboardingFlow: React.FC = () => {
                   {currentStep === 1 && `${selectedGenres.length}/3 genres selected`}
                   {currentStep === 2 && `${selectedSongs.length}/5 songs selected`}
                 </p>
+                {currentStep === 2 && selectedSongs.length === 0 && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    You can skip song selection and set preferences later
+                  </p>
+                )}
               </div>
 
               {currentStep === 2 ? (
                 <NeonButton
                   variant="primary"
                   onClick={handleComplete}
-                  disabled={!canProceed() || isLoading}
+                  disabled={isLoading}
                   className="flex items-center space-x-2"
                 >
                   <Check className="w-4 h-4" />
-                  <span>{isLoading ? 'Saving...' : 'Complete Setup'}</span>
+                  <span>
+                    {isLoading 
+                      ? 'Saving...' 
+                      : selectedSongs.length === 5 
+                        ? 'Complete Setup' 
+                        : selectedSongs.length > 0 
+                          ? `Continue with ${selectedSongs.length} songs`
+                          : 'Skip & Complete Setup'
+                    }
+                  </span>
                 </NeonButton>
               ) : (
                 <NeonButton

@@ -48,100 +48,60 @@ export const SongSelector: React.FC<SongSelectorProps> = ({
     const loadGenreTracks = async () => {
       setIsLoadingGenres(true);
       setError(null);
-      let tracksSuccessfullyFetched = true; // Flag for success of primary genre track fetching
 
       try {
         const allTracks: any[] = [];
+        
         if (selectedGenres.length > 0) {
-            for (const genre of selectedGenres) {
-                const genreId = GENRE_MAPPING[genre];
-                if (genreId) {
-                    try {
-                        const searchQuery = `genre:"${genre}"`;
-                        // Fetch 5, use top 3 as before
-                        const response = await deezerService.searchSongs(searchQuery, 5);
-                        if (response.data && response.data.length > 0) {
-                            const topTracks = response.data.slice(0, 3).map(track => ({
-                                ...track,
-                                genre: genre
-                            }));
-                            allTracks.push(...topTracks);
-                        } else {
-                            console.warn(`No tracks found for genre ${genre}`);
-                        }
-                    } catch (genreError) {
-                        console.error(`Error loading tracks for genre ${genre}:`, genreError);
-                        tracksSuccessfullyFetched = false;
-                        // Optional: break here if one failure is enough to stop
-                    }
-                }
+          // Intentar cargar canciones por género
+          for (const genre of selectedGenres) {
+            try {
+              const searchQuery = genre;
+              const response = await deezerService.searchSongs(searchQuery, 8);
+              
+              if (response.data && response.data.length > 0) {
+                const topTracks = response.data.slice(0, 4).map(track => ({
+                  ...track,
+                  genre: genre
+                }));
+                allTracks.push(...topTracks);
+              }
+            } catch (genreError) {
+              console.warn(`Error loading tracks for genre ${genre}:`, genreError);
             }
+          }
 
-            // Only attempt to fetch supplementary tracks if initial genre fetches were successful
-            // and we have some tracks but fewer than 15.
-            if (tracksSuccessfullyFetched && allTracks.length > 0 && allTracks.length < 15) {
-                try {
-                    const { data: topTracksData } = await deezerService.getTopTracks(20);
-                    if (topTracksData?.data) {
-                        const needed = 15 - allTracks.length;
-                        const additionalTracks = topTracksData.data
-                            .slice(0, Math.max(0, needed)) // Ensure slice is not negative
-                            .map(track => ({ ...track, genre: 'Popular' }));
-                        allTracks.push(...additionalTracks);
-                    }
-                } catch (topTracksError) {
-                    console.warn('Warning: Error loading supplementary top tracks:', topTracksError);
-                    // Not treating this as a critical failure if genre tracks were already fetched.
-                }
+          // Si no tenemos suficientes canciones, agregar populares
+          if (allTracks.length < 10) {
+            try {
+              const { data: topTracksData } = await deezerService.getTopTracks(15);
+              if (topTracksData?.data) {
+                const needed = 15 - allTracks.length;
+                const additionalTracks = topTracksData.data
+                  .slice(0, needed)
+                  .filter(track => !allTracks.some(at => at.id === track.id))
+                  .map(track => ({ ...track, genre: 'Popular' }));
+                allTracks.push(...additionalTracks);
+              }
+            } catch (topTracksError) {
+              console.warn('Error loading top tracks:', topTracksError);
             }
+          }
         }
 
-        // (Inside the try block of loadGenreTracks, after all track fetching attempts)
-
-        if (selectedGenres.length > 0) {
-            // Scenario 1: Complete failure - errors during genre fetching AND zero tracks resulted.
-            if (!tracksSuccessfullyFetched && allTracks.length === 0) {
-                throw new Error("Could not fetch songs for your selected genres. Please try other genres or check your connection.");
-            }
-
-            // Scenario 2: Partial success or insufficient supplementary - got some tracks (1-4) but not enough to select 5.
-            // This directly addresses the "only 3 songs shown" issue.
-            if (allTracks.length > 0 && allTracks.length < 5) {
-                console.warn(`Fetched only ${allTracks.length} tracks for selected genres. Augmenting with fallback songs to ensure enough options for selection.`);
-                const currentTracksCopy = [...allTracks]; // Create a copy to avoid potential issues if allTracks is referenced elsewhere before re-assignment
-                const fallbacksToAdd = getFallbackSongs().filter(fb => !currentTracksCopy.some(at => at.id === fb.id)); // Get unique fallbacks
-                const combinedTracks = [...currentTracksCopy, ...fallbacksToAdd];
-                setGenreTracks(combinedTracks.slice(0, 15)); // Display combined list, capped at 15 tracks
-                // Note: Not setting a full error here as we've provided a usable list.
-                // A toast message could be an alternative if user feedback is desired for augmentation.
-            }
-            // Scenario 3: Sufficient tracks found (5 or more).
-            else if (allTracks.length >= 5) {
-                setGenreTracks(allTracks.slice(0, 15)); // Display fetched tracks, capped at 15
-            }
-            // Scenario 4: Zero tracks found, even if `tracksSuccessfullyFetched` was true (e.g., genres returned no tracks).
-            // Or, `tracksSuccessfullyFetched` is false but `allTracks.length` was not 0 initially but became 0.
-            else if (allTracks.length === 0) {
-                throw new Error("No songs were found that match your selected genres. Please try different genres or check available popular tracks.");
-            }
-            // Implicit else: Should not be reached if logic is exhaustive for allTracks.length conditions.
-            // If it were, it would mean setGenreTracks might not be called, leading to an empty display.
-            // However, the above conditions (allTracks.length === 0, <5, >=5) cover all cases for allTracks.length.
-
-        } else {
-            // This 'else' corresponds to selectedGenres.length === 0.
-            // This path should ideally not be taken by loadGenreTracks itself, as the calling useEffect
-            // handles the selectedGenres.length === 0 case by directly setting fallbacks and not calling loadGenreTracks.
-            // Adding as a defensive measure in case of unexpected calls to loadGenreTracks.
-            console.warn("loadGenreTracks was called unexpectedly with no selected genres. Using fallback songs.");
-            setGenreTracks(getFallbackSongs());
+        // Si aún no tenemos canciones, usar fallbacks
+        if (allTracks.length < 5) {
+          const fallbackTracks = getFallbackSongs();
+          const uniqueFallbacks = fallbackTracks.filter(fb => 
+            !allTracks.some(at => at.id === fb.id)
+          );
+          allTracks.push(...uniqueFallbacks);
         }
 
-        // The existing main catch (err: any) block for loadGenreTracks will handle errors thrown by the conditions above
-        // (e.g., from Scenario 1 or 4). It already calls setError(err.message) and setGenreTracks(getFallbackSongs()).
+        setGenreTracks(allTracks.slice(0, 15));
       } catch (err: any) {
-        console.error('Main error in loadGenreTracks:', err);
-        setError(err.message || 'Unable to load songs. Please check connection and try again.');
+        console.error('Error loading tracks:', err);
+        setError('Unable to load songs. Using curated selection instead.');
         setGenreTracks(getFallbackSongs());
       } finally {
         setIsLoadingGenres(false);
@@ -267,8 +227,13 @@ export const SongSelector: React.FC<SongSelectorProps> = ({
   const handleRetry = () => {
     setError(null);
     setIsLoadingGenres(true);
-    // Trigger reload by updating a state that useEffect depends on
-    window.location.reload();
+    setGenreTracks([]);
+    // Force re-run of useEffect
+    const currentGenres = [...selectedGenres];
+    setSelectedGenres([]);
+    setTimeout(() => {
+      setSelectedGenres(currentGenres.length > 0 ? currentGenres : []);
+    }, 100);
   };
 
   if (error) {
@@ -350,7 +315,7 @@ export const SongSelector: React.FC<SongSelectorProps> = ({
           Choose Your Favorite Songs
         </h2>
         <p className="text-xl text-gray-300 mb-2">
-          Select exactly 5 songs to complete your music profile
+          Select up to 5 songs to personalize your experience
         </p>
         <p className="text-lg text-neon-purple font-medium">
           {selectedSongs.length}/5 songs selected
