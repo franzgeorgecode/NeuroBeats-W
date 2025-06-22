@@ -1,9 +1,8 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Play, Pause, Check, Loader2, Music, RefreshCw } from 'lucide-react';
-import { useDeezer } from '../../hooks/useDeezer';
+import { Play, Pause, Check, Music } from 'lucide-react';
 import { GlassCard } from '../ui/GlassCard';
-import { NeonButton } from '../ui/NeonButton';
+import { getSongsByGenres, type MockSong } from '../../data/mockSongs';
 import type { SelectedSong } from './OnboardingFlow';
 
 interface SongSelectorProps {
@@ -12,190 +11,44 @@ interface SongSelectorProps {
   onSongToggle: (song: SelectedSong) => void;
 }
 
-// Mapeo de géneros a IDs de Deezer
-const GENRE_MAPPING: { [key: string]: string } = {
-  'Pop': '132',
-  'Rock': '152', 
-  'Hip Hop': '116',
-  'Electronic': '106',
-  'Classical': '32',
-  'Jazz': '129',
-  'Reggae': '144',
-  'Country': '2',
-  'R&B': '165',
-  'Latin': '197',
-  'Metal': '464',
-  'Indie': '85',
-  'Folk': '466',
-  'Blues': '153',
-  'Soul': '169'
-};
-
 export const SongSelector: React.FC<SongSelectorProps> = ({
   selectedGenres,
   selectedSongs,
   onSongToggle,
 }) => {
-  const { useTopTracks, deezerService } = useDeezer();
   const [playingPreview, setPlayingPreview] = useState<string | null>(null);
-  const [genreTracks, setGenreTracks] = useState<any[]>([]);
-  const [isLoadingGenres, setIsLoadingGenres] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
   const audioRef = useRef<HTMLAudioElement>(null);
 
-  // Cargar canciones por género
+  // Usar useMemo para evitar re-renders innecesarios
+  const availableSongs = useMemo(() => {
+    const songs = getSongsByGenres(selectedGenres);
+    return songs.slice(0, 15); // Limitar a 15 canciones máximo
+  }, [selectedGenres]);
+
+  // Simular loading inicial solo una vez
   useEffect(() => {
-    const loadGenreTracks = async () => {
-      setIsLoadingGenres(true);
-      setError(null);
+    const timer = setTimeout(() => {
+      setIsInitialLoading(false);
+    }, 1000); // 1 segundo de loading para simular carga
 
-      try {
-        const allTracks: any[] = [];
-        
-        if (selectedGenres.length > 0) {
-          // Intentar cargar canciones por género
-          for (const genre of selectedGenres) {
-            try {
-              const searchQuery = genre;
-              const response = await deezerService.searchSongs(searchQuery, 8);
-              
-              if (response.data && response.data.length > 0) {
-                const topTracks = response.data.slice(0, 4).map(track => ({
-                  ...track,
-                  genre: genre
-                }));
-                allTracks.push(...topTracks);
-              }
-            } catch (genreError) {
-              console.warn(`Error loading tracks for genre ${genre}:`, genreError);
-            }
-          }
-
-          // Si no tenemos suficientes canciones, agregar populares
-          if (allTracks.length < 10) {
-            try {
-              const { data: topTracksData } = await deezerService.getTopTracks(15);
-              if (topTracksData?.data) {
-                const needed = 15 - allTracks.length;
-                const additionalTracks = topTracksData.data
-                  .slice(0, needed)
-                  .filter(track => !allTracks.some(at => at.id === track.id))
-                  .map(track => ({ ...track, genre: 'Popular' }));
-                allTracks.push(...additionalTracks);
-              }
-            } catch (topTracksError) {
-              console.warn('Error loading top tracks:', topTracksError);
-            }
-          }
-        }
-
-        // Si aún no tenemos canciones, usar fallbacks
-        if (allTracks.length < 5) {
-          const fallbackTracks = getFallbackSongs();
-          const uniqueFallbacks = fallbackTracks.filter(fb => 
-            !allTracks.some(at => at.id === fb.id)
-          );
-          allTracks.push(...uniqueFallbacks);
-        }
-
-        setGenreTracks(allTracks.slice(0, 15));
-      } catch (err: any) {
-        console.error('Error loading tracks:', err);
-        setError('Unable to load songs. Using curated selection instead.');
-        setGenreTracks(getFallbackSongs());
-      } finally {
-        setIsLoadingGenres(false);
-      }
-    };
-
-    if (selectedGenres.length > 0) {
-      loadGenreTracks();
-    } else {
-      setIsLoadingGenres(false);
-      setError(null);
-      setGenreTracks(getFallbackSongs());
-    }
-  }, [selectedGenres, deezerService]);
-
-  const getFallbackSongs = () => [
-    {
-      id: 'fallback-1',
-      title: 'Blinding Lights',
-      artist: { name: 'The Weeknd' },
-      album: { cover_medium: 'https://images.pexels.com/photos/1763075/pexels-photo-1763075.jpeg' },
-      duration: 200,
-      preview: '',
-      genre: 'Pop'
-    },
-    {
-      id: 'fallback-2', 
-      title: 'Watermelon Sugar',
-      artist: { name: 'Harry Styles' },
-      album: { cover_medium: 'https://images.pexels.com/photos/1644888/pexels-photo-1644888.jpeg' },
-      duration: 174,
-      preview: '',
-      genre: 'Pop'
-    },
-    {
-      id: 'fallback-3',
-      title: 'Good 4 U', 
-      artist: { name: 'Olivia Rodrigo' },
-      album: { cover_medium: 'https://images.pexels.com/photos/1540406/pexels-photo-1540406.jpeg' },
-      duration: 178,
-      preview: '',
-      genre: 'Pop'
-    },
-    {
-      id: 'fallback-4',
-      title: 'Levitating',
-      artist: { name: 'Dua Lipa' },
-      album: { cover_medium: 'https://images.pexels.com/photos/1389429/pexels-photo-1389429.jpeg' },
-      duration: 203,
-      preview: '',
-      genre: 'Pop'
-    },
-    {
-      id: 'fallback-5',
-      title: 'Stay',
-      artist: { name: 'The Kid LAROI & Justin Bieber' },
-      album: { cover_medium: 'https://images.pexels.com/photos/1190297/pexels-photo-1190297.jpeg' },
-      duration: 141,
-      preview: '',
-      genre: 'Pop'
-    },
-    {
-      id: 'fallback-6',
-      title: 'Heat Waves',
-      artist: { name: 'Glass Animals' },
-      album: { cover_medium: 'https://images.pexels.com/photos/1105666/pexels-photo-1105666.jpeg' },
-      duration: 238,
-      preview: '',
-      genre: 'Indie'
-    },
-    {
-      id: 'fallback-7',
-      title: 'As It Was',
-      artist: { name: 'Harry Styles' },
-      album: { cover_medium: 'https://images.pexels.com/photos/1407322/pexels-photo-1407322.jpeg' },
-      duration: 167,
-      preview: '',
-      genre: 'Pop'
-    }
-  ];
+    return () => clearTimeout(timer);
+  }, []); // Solo se ejecuta una vez al montar
 
   const handlePreviewPlay = (song: SelectedSong) => {
-    if (!audioRef.current || !song.preview_url) return;
+    if (!audioRef.current) return;
 
     try {
       if (playingPreview === song.id) {
         audioRef.current.pause();
         setPlayingPreview(null);
       } else {
-        audioRef.current.src = song.preview_url;
-        audioRef.current.play().catch((error) => {
-          console.warn('Audio playback failed:', error);
-        });
+        // Para el demo, no reproducimos audio real
         setPlayingPreview(song.id);
+        // Simular que el audio termina después de 30 segundos
+        setTimeout(() => {
+          setPlayingPreview(null);
+        }, 30000);
       }
     } catch (error) {
       console.warn('Audio preview error:', error);
@@ -203,18 +56,14 @@ export const SongSelector: React.FC<SongSelectorProps> = ({
     }
   };
 
-  const handleAudioEnded = () => {
-    setPlayingPreview(null);
-  };
-
-  const convertDeezerToSelectedSong = (deezerTrack: any): SelectedSong => {
+  const convertToSelectedSong = (mockSong: MockSong): SelectedSong => {
     return {
-      id: deezerTrack.id,
-      title: deezerTrack.title,
-      artist: deezerTrack.artist.name,
-      preview_url: deezerTrack.preview || '',
-      cover_url: deezerTrack.album?.cover_medium || deezerTrack.album?.cover_big || 'https://images.pexels.com/photos/1763075/pexels-photo-1763075.jpeg',
-      duration: deezerTrack.duration,
+      id: mockSong.id,
+      title: mockSong.title,
+      artist: mockSong.artist,
+      preview_url: mockSong.preview_url,
+      cover_url: mockSong.cover_url,
+      duration: mockSong.duration,
     };
   };
 
@@ -224,19 +73,8 @@ export const SongSelector: React.FC<SongSelectorProps> = ({
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const handleRetry = () => {
-    setError(null);
-    setIsLoadingGenres(true);
-    setGenreTracks([]);
-    // Force re-run of useEffect
-    const currentGenres = [...selectedGenres];
-    setSelectedGenres([]);
-    setTimeout(() => {
-      setSelectedGenres(currentGenres.length > 0 ? currentGenres : []);
-    }, 100);
-  };
-
-  if (error) {
+  // Loading state
+  if (isInitialLoading) {
     return (
       <div className="text-center">
         <motion.div
@@ -245,53 +83,17 @@ export const SongSelector: React.FC<SongSelectorProps> = ({
           className="mb-8"
         >
           <h2 className="text-4xl font-space font-bold text-white mb-4">
-            Choose Your Favorite Songs
-          </h2>
-          <p className="text-xl text-gray-300 mb-2">
-            Select exactly 5 songs to complete your music profile
-          </p>
-        </motion.div>
-
-        <GlassCard className="p-8 text-center">
-          <Music className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-xl font-semibold text-white mb-2">
-            Unable to load songs
-          </h3>
-          <p className="text-gray-400 mb-6">
-            {error}
-          </p>
-          <div className="space-y-4">
-            <NeonButton variant="primary" onClick={handleRetry}>
-              <RefreshCw className="w-4 h-4 mr-2" />
-              Try Again
-            </NeonButton>
-            <p className="text-sm text-gray-500">
-              Or continue with our curated selection below
-            </p>
-          </div>
-        </GlassCard>
-      </div>
-    );
-  }
-
-  if (isLoadingGenres) {
-    return (
-      <div className="text-center">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-8"
-        >
-          <h2 className="text-4xl font-space font-bold text-white mb-4">
-            Loading Your Personalized Songs
+            Curating Your Perfect Songs
           </h2>
           <p className="text-xl text-gray-300">
-            Finding the perfect tracks based on your genre preferences...
+            Finding the best tracks based on your preferences...
           </p>
         </motion.div>
 
-        <div className="flex items-center justify-center">
-          <Loader2 className="w-8 h-8 text-neon-purple animate-spin" />
+        <div className="flex items-center justify-center space-x-2">
+          <div className="w-3 h-3 bg-neon-purple rounded-full animate-bounce" />
+          <div className="w-3 h-3 bg-neon-blue rounded-full animate-bounce" style={{ animationDelay: '0.1s' }} />
+          <div className="w-3 h-3 bg-neon-pink rounded-full animate-bounce" style={{ animationDelay: '0.2s' }} />
         </div>
       </div>
     );
@@ -301,7 +103,7 @@ export const SongSelector: React.FC<SongSelectorProps> = ({
     <div className="text-center">
       <audio
         ref={audioRef}
-        onEnded={handleAudioEnded}
+        onEnded={() => setPlayingPreview(null)}
         onError={() => setPlayingPreview(null)}
       />
 
@@ -321,7 +123,10 @@ export const SongSelector: React.FC<SongSelectorProps> = ({
           {selectedSongs.length}/5 songs selected
         </p>
         <p className="text-sm text-gray-400 mt-2">
-          Based on your selected genres: {selectedGenres.join(', ')}
+          {selectedGenres.length > 0 
+            ? `Curated for: ${selectedGenres.join(', ')}`
+            : 'Popular tracks for you'
+          }
         </p>
       </motion.div>
 
@@ -331,8 +136,8 @@ export const SongSelector: React.FC<SongSelectorProps> = ({
         transition={{ duration: 0.6, delay: 0.2 }}
         className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto"
       >
-        {genreTracks.map((track, index) => {
-          const song = convertDeezerToSelectedSong(track);
+        {availableSongs.map((mockSong, index) => {
+          const song = convertToSelectedSong(mockSong);
           const isSelected = selectedSongs.some(s => s.id === song.id);
           const isPlaying = playingPreview === song.id;
           const canSelect = selectedSongs.length < 5 || isSelected;
@@ -373,38 +178,42 @@ export const SongSelector: React.FC<SongSelectorProps> = ({
                   {/* Album Art with Play Button */}
                   <div className="relative">
                     <div className="w-16 h-16 bg-gradient-to-br from-neon-purple to-neon-blue rounded-xl overflow-hidden">
-                      {song.cover_url ? (
-                        <img
-                          src={song.cover_url}
-                          alt={song.title}
-                          className="w-full h-full object-cover"
-                          loading="lazy"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center">
-                          <Music className="w-8 h-8 text-white" />
-                        </div>
-                      )}
+                      <img
+                        src={song.cover_url}
+                        alt={song.title}
+                        className="w-full h-full object-cover"
+                        loading="lazy"
+                        onError={(e) => {
+                          // Fallback si la imagen no carga
+                          const target = e.target as HTMLImageElement;
+                          target.style.display = 'none';
+                          target.parentElement!.innerHTML = `
+                            <div class="w-full h-full flex items-center justify-center">
+                              <svg class="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z"/>
+                              </svg>
+                            </div>
+                          `;
+                        }}
+                      />
                     </div>
 
-                    {/* Preview Play Button - only show if preview URL exists */}
-                    {song.preview_url && (
-                      <motion.button
-                        className="absolute inset-0 bg-black/50 rounded-xl flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                        whileHover={{ scale: 1.1 }}
-                        whileTap={{ scale: 0.9 }}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handlePreviewPlay(song);
-                        }}
-                      >
-                        {isPlaying ? (
-                          <Pause className="w-6 h-6 text-white" />
-                        ) : (
-                          <Play className="w-6 h-6 text-white" />
-                        )}
-                      </motion.button>
-                    )}
+                    {/* Preview Play Button */}
+                    <motion.button
+                      className="absolute inset-0 bg-black/50 rounded-xl flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.9 }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handlePreviewPlay(song);
+                      }}
+                    >
+                      {isPlaying ? (
+                        <Pause className="w-6 h-6 text-white" />
+                      ) : (
+                        <Play className="w-6 h-6 text-white" />
+                      )}
+                    </motion.button>
 
                     {/* Playing indicator */}
                     {isPlaying && (
@@ -426,11 +235,9 @@ export const SongSelector: React.FC<SongSelectorProps> = ({
                       <p className="text-gray-500 text-xs">
                         {formatDuration(song.duration)}
                       </p>
-                      {track.genre && (
-                        <span className="text-xs bg-neon-purple/20 text-neon-purple px-2 py-1 rounded-full">
-                          {track.genre}
-                        </span>
-                      )}
+                      <span className="text-xs bg-neon-purple/20 text-neon-purple px-2 py-1 rounded-full">
+                        {mockSong.genre}
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -466,17 +273,22 @@ export const SongSelector: React.FC<SongSelectorProps> = ({
                     className="flex items-center space-x-3 p-2 bg-white/5 rounded-lg"
                   >
                     <div className="w-8 h-8 bg-gradient-to-br from-neon-purple to-neon-blue rounded-lg overflow-hidden">
-                      {song.cover_url ? (
-                        <img
-                          src={song.cover_url}
-                          alt={song.title}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center">
-                          <Music className="w-4 h-4 text-white" />
-                        </div>
-                      )}
+                      <img
+                        src={song.cover_url}
+                        alt={song.title}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          target.style.display = 'none';
+                          target.parentElement!.innerHTML = `
+                            <div class="w-full h-full flex items-center justify-center">
+                              <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z"/>
+                              </svg>
+                            </div>
+                          `;
+                        }}
+                      />
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-white text-sm font-medium truncate">
@@ -494,6 +306,7 @@ export const SongSelector: React.FC<SongSelectorProps> = ({
         )}
       </AnimatePresence>
 
+      {/* Completion Message */}
       {selectedSongs.length === 5 && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -504,6 +317,20 @@ export const SongSelector: React.FC<SongSelectorProps> = ({
             <Check className="w-5 h-5" />
             <span className="font-inter font-medium">Perfect! You're ready to complete your setup</span>
           </div>
+        </motion.div>
+      )}
+
+      {/* Help Text */}
+      {selectedSongs.length === 0 && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 1 }}
+          className="mt-6"
+        >
+          <p className="text-gray-500 text-sm">
+            Select songs you love or skip this step to continue with default recommendations
+          </p>
         </motion.div>
       )}
     </div>

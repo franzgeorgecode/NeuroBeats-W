@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Play, Heart, MoreHorizontal, TrendingUp, Music2, Headphones } from 'lucide-react';
 import { GlassCard } from '../components/ui/GlassCard';
@@ -6,12 +6,34 @@ import { NeonButton } from '../components/ui/NeonButton';
 import { useDeezer } from '../hooks/useDeezer';
 import { usePlayerStore } from '../stores/playerStore';
 import { useToast } from '../hooks/useToast';
+import { getAllSongs } from '../data/mockSongs';
 
 export const HomePage: React.FC = () => {
   const { useTopTracks, deezerService } = useDeezer();
   const { data: topTracksData, isLoading, error } = useTopTracks(20);
   const { setCurrentTrack, addToQueue, setIsPlaying } = usePlayerStore();
   const { showToast } = useToast();
+  const [fallbackTracks, setFallbackTracks] = useState<any[]>([]);
+
+  // Si hay error, usar datos mockeados
+  useEffect(() => {
+    if (error) {
+      const mockSongs = getAllSongs();
+      const deezerFormatTracks = mockSongs.map(song => ({
+        id: song.id,
+        title: song.title,
+        duration: song.duration,
+        preview: song.preview_url,
+        artist: { name: song.artist },
+        album: { 
+          cover_medium: song.cover_url,
+          cover_big: song.cover_url,
+          title: `${song.title} - Single`
+        }
+      }));
+      setFallbackTracks(deezerFormatTracks);
+    }
+  }, [error]);
 
   const handlePlayTrack = (deezerTrack: any) => {
     try {
@@ -40,25 +62,9 @@ export const HomePage: React.FC = () => {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  if (error) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-dark-500 via-dark-600 to-dark-700 pt-24 pb-32">
-        <div className="container mx-auto px-6">
-          <GlassCard className="p-8 text-center">
-            <h2 className="text-2xl font-space font-bold text-white mb-4">
-              Unable to load music
-            </h2>
-            <p className="text-gray-400 mb-6">
-              Please check your internet connection and try again.
-            </p>
-            <NeonButton variant="primary" onClick={() => window.location.reload()}>
-              Retry
-            </NeonButton>
-          </GlassCard>
-        </div>
-      </div>
-    );
-  }
+  // Determinar qué datos usar
+  const tracksToShow = error ? fallbackTracks : topTracksData?.data;
+  const isLoadingState = isLoading && !error;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-dark-500 via-dark-600 to-dark-700 pt-24 pb-32">
@@ -111,11 +117,16 @@ export const HomePage: React.FC = () => {
           <div className="flex items-center mb-6">
             <TrendingUp className="w-6 h-6 text-neon-purple mr-3" />
             <h2 className="text-2xl font-space font-bold text-white">
-              Top Tracks
+              {error ? 'Popular Tracks' : 'Top Tracks'}
             </h2>
+            {error && (
+              <span className="ml-3 text-xs bg-yellow-500/20 text-yellow-400 px-2 py-1 rounded-full">
+                Offline Mode
+              </span>
+            )}
           </div>
 
-          {isLoading ? (
+          {isLoadingState ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {Array.from({ length: 6 }).map((_, index) => (
                 <GlassCard key={index} className="p-6 animate-pulse">
@@ -131,7 +142,7 @@ export const HomePage: React.FC = () => {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {topTracksData?.data?.slice(0, 12).map((track, index) => (
+              {tracksToShow?.slice(0, 12).map((track, index) => (
                 <motion.div
                   key={track.id}
                   initial={{ opacity: 0, y: 20 }}
