@@ -96,12 +96,18 @@ export const OnboardingFlow: React.FC = () => {
             onboardingCompleted: true,
             favoriteGenres: selectedGenres,
             selectedSongs: selectedSongs,
+            completedAt: new Date().toISOString(),
           }
         });
       }
       
       setCurrentStep(3); // Move to complete screen
       showToast('Welcome to NeuroBeats! Your preferences have been saved.', 'success');
+      
+      // Redirect to dashboard after a brief delay
+      setTimeout(() => {
+        window.location.reload(); // Force refresh to update onboarding status
+      }, 2000);
     } catch (error) {
       console.error('Error saving preferences:', error);
       showToast('Error saving preferences', 'error');

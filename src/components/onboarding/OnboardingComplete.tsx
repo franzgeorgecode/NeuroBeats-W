@@ -25,7 +25,8 @@ export const OnboardingComplete: React.FC<OnboardingCompleteProps> = ({
   }, []);
 
   const handleGetStarted = () => {
-    setCurrentPage('home');
+    // Force a page reload to ensure the app updates onboarding status
+    window.location.href = '/';
   };
 
   return (

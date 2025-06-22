@@ -5,6 +5,7 @@ import { GlassCard } from '../components/ui/GlassCard';
 import { NeonButton } from '../components/ui/NeonButton';
 import { useDeezer } from '../hooks/useDeezer';
 import { usePlayerStore } from '../stores/playerStore';
+import { useAppStore } from '../stores/appStore';
 import { useToast } from '../hooks/useToast';
 import { getAllSongs } from '../data/mockSongs';
 
@@ -12,6 +13,7 @@ export const HomePage: React.FC = () => {
   const { useTopTracks, deezerService } = useDeezer();
   const { data: topTracksData, isLoading, error } = useTopTracks(20);
   const { setCurrentTrack, addToQueue, setIsPlaying } = usePlayerStore();
+  const { setCurrentPage } = useAppStore();
   const { showToast } = useToast();
   const [fallbackTracks, setFallbackTracks] = useState<any[]>([]);
 
@@ -207,31 +209,86 @@ export const HomePage: React.FC = () => {
           )}
         </motion.section>
 
+        {/* AI Recommendations */}
+        <motion.section
+          className="mb-12"
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.4 }}
+        >
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center">
+              <div className="w-8 h-8 bg-neon-gradient rounded-lg flex items-center justify-center mr-3">
+                <span className="text-white font-bold text-sm">AI</span>
+              </div>
+              <h2 className="text-2xl font-space font-bold text-white">
+                AI Recommendations
+              </h2>
+            </div>
+            <NeonButton
+              variant="secondary"
+              size="sm"
+              onClick={() => setCurrentPage('ai-playlist')}
+            >
+              Generate Playlist
+            </NeonButton>
+          </div>
+
+          <GlassCard className="p-6 bg-gradient-to-r from-neon-purple/10 to-neon-blue/10 border border-neon-purple/20">
+            <div className="text-center">
+              <div className="w-16 h-16 bg-neon-gradient rounded-full flex items-center justify-center mx-auto mb-4">
+                <Music2 className="w-8 h-8 text-white" />
+              </div>
+              <h3 className="text-xl font-space font-bold text-white mb-2">
+                Get Personalized Recommendations
+              </h3>
+              <p className="text-gray-300 mb-4">
+                Our AI analyzes your music taste and creates the perfect playlist just for you
+              </p>
+              <div className="flex flex-wrap gap-2 justify-center mb-6">
+                {['Based on your genres', 'Mood-aware', 'Time-appropriate', 'New discoveries'].map((feature) => (
+                  <span key={feature} className="px-3 py-1 bg-neon-purple/20 text-neon-purple rounded-full text-sm">
+                    {feature}
+                  </span>
+                ))}
+              </div>
+              <NeonButton
+                variant="primary"
+                onClick={() => setCurrentPage('ai-playlist')}
+              >
+                <span className="mr-2">✨</span>
+                Create AI Playlist
+              </NeonButton>
+            </div>
+          </GlassCard>
+        </motion.section>
+
         {/* Quick Actions */}
         <motion.section
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.4 }}
+          transition={{ duration: 0.6, delay: 0.5 }}
         >
           <h2 className="text-2xl font-space font-bold text-white mb-6">
             Quick Actions
           </h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[
-              { label: 'Search Music', color: 'from-neon-purple to-neon-blue' },
-              { label: 'Top Charts', color: 'from-neon-blue to-neon-cyan' },
-              { label: 'Genres', color: 'from-neon-cyan to-neon-green' },
-              { label: 'Playlists', color: 'from-neon-green to-neon-pink' },
+              { label: 'Search Music', color: 'from-neon-purple to-neon-blue', action: () => setCurrentPage('search') },
+              { label: 'Top Charts', color: 'from-neon-blue to-neon-cyan', action: () => setCurrentPage('trending') },
+              { label: 'Genres', color: 'from-neon-cyan to-neon-green', action: () => setCurrentPage('genres') },
+              { label: 'Discover', color: 'from-neon-green to-neon-pink', action: () => setCurrentPage('discover') },
             ].map((action, index) => (
               <motion.div
                 key={action.label}
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.4, delay: 0.5 + index * 0.1 }}
+                transition={{ duration: 0.4, delay: 0.6 + index * 0.1 }}
               >
                 <GlassCard 
                   hover 
                   className={`p-6 bg-gradient-to-br ${action.color} cursor-pointer`}
+                  onClick={action.action}
                 >
                   <h3 className="text-white font-inter font-semibold text-center">
                     {action.label}
