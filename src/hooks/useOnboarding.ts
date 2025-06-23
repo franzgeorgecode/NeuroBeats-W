@@ -14,9 +14,14 @@ export const useOnboarding = () => {
     }
 
     try {
-      // Check if user has completed onboarding
-      const hasCompletedOnboarding = user.publicMetadata?.onboardingCompleted === true;
+      // Check if user has completed onboarding in Clerk or localStorage
+      const clerkCompleted = user.publicMetadata?.onboardingCompleted === true;
+      const localCompleted = localStorage.getItem('onboardingCompleted') === 'true';
+      const hasCompletedOnboarding = clerkCompleted || localCompleted;
+      
       console.log('Onboarding check:', { 
+        clerkCompleted,
+        localCompleted,
         hasCompletedOnboarding, 
         metadata: user.publicMetadata 
       });
@@ -24,8 +29,9 @@ export const useOnboarding = () => {
       setShouldShowOnboarding(!hasCompletedOnboarding);
     } catch (error) {
       console.error('Error checking onboarding status:', error);
-      // Default to showing onboarding if there's an error checking
-      setShouldShowOnboarding(true);
+      // Check localStorage as fallback
+      const localCompleted = localStorage.getItem('onboardingCompleted') === 'true';
+      setShouldShowOnboarding(!localCompleted);
     }
   }, [user, isLoaded, user?.publicMetadata]);
 

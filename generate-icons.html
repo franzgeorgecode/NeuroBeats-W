@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Generate NeuroBeats Icons</title>
+</head>
+<body>
+    <canvas id="canvas" style="border: 1px solid #ccc;"></canvas>
+    <br>
+    <button onclick="generateIcons()">Generate Icons</button>
+    <div id="downloads"></div>
+
+    <script>
+        function generateIcons() {
+            const sizes = [72, 96, 128, 144, 152, 192, 384, 512];
+            const downloads = document.getElementById('downloads');
+            downloads.innerHTML = '';
+
+            sizes.forEach(size => {
+                const canvas = document.createElement('canvas');
+                canvas.width = size;
+                canvas.height = size;
+                const ctx = canvas.getContext('2d');
+
+                // Create NeuroBeats icon with gradient background
+                const gradient = ctx.createLinearGradient(0, 0, size, size);
+                gradient.addColorStop(0, '#8B5CF6');
+                gradient.addColorStop(0.5, '#3B82F6');
+                gradient.addColorStop(1, '#06B6D4');
+
+                // Fill background
+                ctx.fillStyle = gradient;
+                ctx.fillRect(0, 0, size, size);
+
+                // Add rounded corners effect
+                ctx.globalCompositeOperation = 'destination-in';
+                ctx.beginPath();
+                ctx.roundRect(0, 0, size, size, size * 0.2);
+                ctx.fill();
+                ctx.globalCompositeOperation = 'source-over';
+
+                // Add music note symbol
+                ctx.fillStyle = 'white';
+                ctx.font = `bold ${size * 0.4}px Arial`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('♪', size/2, size/2);
+
+                // Create download link
+                canvas.toBlob(blob => {
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `icon-${size}x${size}.png`;
+                    a.textContent = `Download ${size}x${size}`;
+                    a.style.display = 'block';
+                    a.style.margin = '5px 0';
+                    downloads.appendChild(a);
+                });
+            });
+        }
+
+        // Auto-generate on load
+        window.onload = generateIcons;
+    </script>
+</body>
+</html>
