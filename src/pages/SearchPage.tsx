@@ -28,7 +28,7 @@ export const SearchPage: React.FC = () => {
   
   const debouncedQuery = useDebounce(query, 500);
   const { useSearchSongs, deezerService } = useDeezer();
-  const { data: searchResults, isLoading, error } = useSearchSongs(debouncedQuery, 30);
+  const { data: searchResults, isLoading, error } = useSearchSongs(debouncedQuery, 11);
   const { setCurrentTrack, setIsPlaying, addToQueue } = usePlayerStore();
   const { showToast } = useToast();
 
@@ -98,7 +98,7 @@ export const SearchPage: React.FC = () => {
                   </div>
                   <div className="flex items-center space-x-2">
                     <Play className="w-5 h-5" />
-                    <span className="font-inter">Preview Available</span>
+                    <span className="font-inter">30s Previews</span>
                   </div>
                 </div>
               </div>
@@ -229,16 +229,16 @@ export const SearchPage: React.FC = () => {
             <div>
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-2xl font-space font-bold text-white">
-                  Search Results for "{query}"
+                  Top 11 Results for "{query}"
                 </h2>
                 <span className="text-gray-400">
-                  {filteredResults.length} results
+                  {filteredResults.length} tracks with 30s previews
                 </span>
               </div>
 
               {isLoading ? (
                 <div className="space-y-4">
-                  <LoadingSkeleton variant="list-song" count={10} />
+                  <LoadingSkeleton variant="list-song" count={11} />
                 </div>
               ) : error ? (
                 <GlassCard className="p-8 text-center">
@@ -257,7 +257,7 @@ export const SearchPage: React.FC = () => {
                     No Results Found
                   </h3>
                   <p className="text-gray-400 mb-4">
-                    No tracks found for "{query}". Try different keywords.
+                    No tracks with 30s previews found for "{query}". Try different keywords.
                   </p>
                   <div className="flex flex-wrap gap-2 justify-center">
                     {trendingSearches.slice(0, 5).map((term) => (
@@ -275,7 +275,7 @@ export const SearchPage: React.FC = () => {
                 </GlassCard>
               ) : (
                 <div className="space-y-2">
-                  {filteredResults.map((track, index) => (
+                  {filteredResults.slice(0, 11).map((track, index) => (
                     <motion.div
                       key={track.id}
                       initial={{ opacity: 0, x: -20 }}
