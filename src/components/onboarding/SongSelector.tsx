@@ -1,25 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Play, Pause, Check, RefreshCw } from 'lucide-react';
+import { Play, Pause, Check, RefreshCw, Clock, Wifi, WifiOff } from 'lucide-react';
 import { GlassCard } from '../ui/GlassCard';
-import { getSongsByGenres } from '../../data/mockSongs';
+import { smartMusicService } from '../../services/smartMusicService';
 import { useDeezer } from '../../hooks/useDeezer';
 import { useToast } from '../../hooks/useToast';
 import type { SelectedSong } from './OnboardingFlow';
-
-interface DeezerTrack {
-  id: string;
-  title: string;
-  duration: number;
-  preview: string;
-  artist: { name: string };
-  album: { 
-    cover_medium: string;
-    cover_big: string;
-    title: string;
-  };
-  sourceGenre?: string;
-}
+import type { CachedSong } from '../../services/dailySongsCache';
 
 interface SongSelectorProps {
   selectedGenres: string[];
@@ -34,104 +21,96 @@ export const SongSelector: React.FC<SongSelectorProps> = ({
 }) => {
   const [playingPreview, setPlayingPreview] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [deezerSongs, setDeezerSongs] = useState<DeezerTrack[]>([]);
-  const [refreshKey, setRefreshKey] = useState(0);
+  const [songs, setSongs] = useState<CachedSong[]>([]);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [cacheInfo, setCacheInfo] = useState<any>(null);
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
   const audioRef = useRef<HTMLAudioElement>(null);
   const { deezerService } = useDeezer();
   const { showToast } = useToast();
 
-  // Cargar canciones desde Deezer basadas en los géneros seleccionados
+  // Configurar smart music service con Deezer
   useEffect(() => {
-    const loadSongsFromDeezer = async () => {
+    if (deezerService) {
+      smartMusicService.setDeezerService(deezerService);
+    }
+  }, [deezerService]);
+
+  // Escuchar cambios de conectividad
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
+  // Cargar canciones inteligentemente
+  useEffect(() => {
+    const loadSongs = async () => {
       if (selectedGenres.length === 0) {
+        setSongs([]);
         setIsLoading(false);
         return;
       }
 
       setIsLoading(true);
+      
       try {
-        const allSongs: DeezerTrack[] = [];
-        
-        // Obtener top 5 de cada género seleccionado
-        for (const genre of selectedGenres) {
-          try {
-            const genreSongs = await deezerService.getSongsByGenre(genre, 5);
-            if (genreSongs.data && genreSongs.data.length > 0) {
-              // Marcar las canciones con su género para mostrar
-              const songsWithGenre = genreSongs.data.slice(0, 5).map(song => ({
-                ...song,
-                sourceGenre: genre
-              }));
-              allSongs.push(...songsWithGenre);
-            }
-          } catch (error) {
-            console.warn(`Error loading songs for genre ${genre}:`, error);
-          }
+        // Obtener información del caché
+        const info = smartMusicService.getCacheInfo();
+        setCacheInfo(info);
+
+        // Cargar canciones usando el smart service
+        const loadedSongs = await smartMusicService.getSongsByGenres(selectedGenres);
+        setSongs(loadedSongs);
+
+        // Mostrar información sobre la fuente de los datos
+        const updatedInfo = smartMusicService.getCacheInfo();
+        if (updatedInfo.totalSongs > 0 && !updatedInfo.isExpired) {
+          const lastUpdated = new Date(updatedInfo.lastUpdated!);
+          const hoursAgo = Math.floor((Date.now() - lastUpdated.getTime()) / (1000 * 60 * 60));
+          showToast(
+            `Showing ${loadedSongs.length} songs (cached ${hoursAgo}h ago)`, 
+            'success'
+          );
+        } else if (loadedSongs.length > 0) {
+          showToast(`Loaded ${loadedSongs.length} fresh songs`, 'success');
+        } else {
+          showToast('Using offline songs', 'info');
         }
 
-        // Si no se pudieron cargar canciones de Deezer, usar fallback
-        if (allSongs.length === 0) {
-          const fallbackSongs = getSongsByGenres(selectedGenres);
-          const fallbackConverted = fallbackSongs.slice(0, 25).map(mockSong => ({
-            id: mockSong.id,
-            title: mockSong.title,
-            duration: mockSong.duration,
-            preview: mockSong.preview_url,
-            artist: { name: mockSong.artist },
-            album: { 
-              cover_medium: mockSong.cover_url,
-              cover_big: mockSong.cover_url,
-              title: `${mockSong.title} - Single`
-            },
-            sourceGenre: mockSong.genre
-          }));
-          setDeezerSongs(fallbackConverted);
-          showToast('Using offline songs', 'info');
-        } else {
-          setDeezerSongs(allSongs);
-          showToast(`Loaded ${allSongs.length} songs from Deezer`, 'success');
-        }
       } catch (error) {
         console.error('Error loading songs:', error);
-        // Usar canciones mock como fallback
-        const fallbackSongs = getSongsByGenres(selectedGenres);
-        const fallbackConverted = fallbackSongs.slice(0, 25).map(mockSong => ({
-          id: mockSong.id,
-          title: mockSong.title,
-          duration: mockSong.duration,
-          preview: mockSong.preview_url,
-          artist: { name: mockSong.artist },
-          album: { 
-            cover_medium: mockSong.cover_url,
-            cover_big: mockSong.cover_url,
-            title: `${mockSong.title} - Single`
-          },
-          sourceGenre: mockSong.genre
-        }));
-        setDeezerSongs(fallbackConverted);
-        showToast('Using offline songs', 'warning');
+        showToast('Error loading songs, using offline mode', 'warning');
+        setSongs([]);
       } finally {
         setIsLoading(false);
       }
     };
 
-    loadSongsFromDeezer();
-  }, [selectedGenres, deezerService, refreshKey, showToast]);
+    loadSongs();
+  }, [selectedGenres, showToast]);
 
-  const handlePreviewPlay = (deezerTrack: DeezerTrack) => {
+  const handlePreviewPlay = (song: CachedSong) => {
     if (!audioRef.current) return;
 
     try {
-      if (playingPreview === deezerTrack.id) {
+      if (playingPreview === song.id) {
         audioRef.current.pause();
         setPlayingPreview(null);
       } else {
-        // Reproducir preview de Deezer (30 segundos máximo)
-        if (deezerTrack.preview && audioRef.current) {
-          audioRef.current.src = deezerTrack.preview;
+        // Reproducir preview (30 segundos máximo)
+        if (song.preview_url && audioRef.current) {
+          audioRef.current.src = song.preview_url;
           audioRef.current.play()
             .then(() => {
-              setPlayingPreview(deezerTrack.id);
+              setPlayingPreview(song.id);
             })
             .catch((error) => {
               console.warn('Audio preview error:', error);
@@ -148,19 +127,39 @@ export const SongSelector: React.FC<SongSelectorProps> = ({
     }
   };
 
-  const refreshSongs = () => {
-    setRefreshKey(prev => prev + 1);
-    showToast('Refreshing songs...', 'info');
+  const refreshSongs = async () => {
+    if (isRefreshing) return;
+    
+    setIsRefreshing(true);
+    showToast('Refreshing songs from Deezer...', 'info');
+    
+    try {
+      const success = await smartMusicService.forceUpdateCache(selectedGenres);
+      
+      if (success) {
+        // Recargar canciones después de la actualización
+        const refreshedSongs = await smartMusicService.getSongsByGenres(selectedGenres);
+        setSongs(refreshedSongs);
+        showToast(`Refreshed ${refreshedSongs.length} songs successfully!`, 'success');
+      } else {
+        showToast('Could not refresh from Deezer, using cached songs', 'warning');
+      }
+    } catch (error) {
+      console.error('Error refreshing songs:', error);
+      showToast('Error refreshing songs', 'error');
+    } finally {
+      setIsRefreshing(false);
+    }
   };
 
-  const convertDeezerToSelectedSong = (deezerTrack: DeezerTrack): SelectedSong => {
+  const convertCachedToSelectedSong = (cachedSong: CachedSong): SelectedSong => {
     return {
-      id: deezerTrack.id,
-      title: deezerTrack.title,
-      artist: deezerTrack.artist.name,
-      preview_url: deezerTrack.preview,
-      cover_url: deezerTrack.album.cover_medium || deezerTrack.album.cover_big,
-      duration: deezerTrack.duration,
+      id: cachedSong.id,
+      title: cachedSong.title,
+      artist: cachedSong.artist,
+      preview_url: cachedSong.preview_url,
+      cover_url: cachedSong.cover_url,
+      duration: cachedSong.duration,
     };
   };
 
@@ -229,15 +228,45 @@ export const SongSelector: React.FC<SongSelectorProps> = ({
               : 'Popular tracks for you'
             }
           </p>
-          <motion.button
-            onClick={refreshSongs}
-            className="p-2 text-neon-purple hover:text-neon-pink transition-colors"
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.9 }}
-            title="Refresh songs"
-          >
-            <RefreshCw className="w-4 h-4" />
-          </motion.button>
+          <div className="flex items-center space-x-2">
+            {/* Indicador de conectividad */}
+            <div className="flex items-center space-x-1">
+              {isOnline ? (
+                <Wifi className="w-3 h-3 text-green-400" />
+              ) : (
+                <WifiOff className="w-3 h-3 text-red-400" />
+              )}
+              <span className="text-xs text-gray-500">
+                {isOnline ? 'Online' : 'Offline'}
+              </span>
+            </div>
+            
+            {/* Información del caché */}
+            {cacheInfo && cacheInfo.lastUpdated && (
+              <div className="flex items-center space-x-1">
+                <Clock className="w-3 h-3 text-neon-purple" />
+                <span className="text-xs text-gray-500">
+                  {new Date(cacheInfo.lastUpdated).toLocaleDateString()}
+                </span>
+              </div>
+            )}
+            
+            {/* Botón de refresh */}
+            <motion.button
+              onClick={refreshSongs}
+              disabled={isRefreshing || !isOnline}
+              className={`p-2 transition-colors ${
+                isRefreshing || !isOnline
+                  ? 'text-gray-600 cursor-not-allowed'
+                  : 'text-neon-purple hover:text-neon-pink'
+              }`}
+              whileHover={!isRefreshing && isOnline ? { scale: 1.1 } : {}}
+              whileTap={!isRefreshing && isOnline ? { scale: 0.9 } : {}}
+              title={isOnline ? 'Refresh songs from Deezer' : 'No internet connection'}
+            >
+              <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+            </motion.button>
+          </div>
         </div>
       </motion.div>
 
@@ -247,8 +276,8 @@ export const SongSelector: React.FC<SongSelectorProps> = ({
         transition={{ duration: 0.6, delay: 0.2 }}
         className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto"
       >
-        {deezerSongs.map((deezerTrack, index) => {
-          const song = convertDeezerToSelectedSong(deezerTrack);
+        {songs.map((cachedSong, index) => {
+          const song = convertCachedToSelectedSong(cachedSong);
           const isSelected = selectedSongs.some(s => s.id === song.id);
           const isPlaying = playingPreview === song.id;
           const canSelect = selectedSongs.length < 5 || isSelected;
@@ -316,7 +345,7 @@ export const SongSelector: React.FC<SongSelectorProps> = ({
                       whileTap={{ scale: 0.9 }}
                       onClick={(e) => {
                         e.stopPropagation();
-                        handlePreviewPlay(deezerTrack);
+                        handlePreviewPlay(cachedSong);
                       }}
                     >
                       {isPlaying ? (
@@ -347,7 +376,7 @@ export const SongSelector: React.FC<SongSelectorProps> = ({
                         {formatDuration(song.duration)}
                       </p>
                       <span className="text-xs bg-neon-purple/20 text-neon-purple px-2 py-1 rounded-full">
-                        {deezerTrack.sourceGenre || 'Music'}
+                        {cachedSong.genre || 'Music'}
                       </span>
                     </div>
                   </div>
@@ -431,8 +460,44 @@ export const SongSelector: React.FC<SongSelectorProps> = ({
         </motion.div>
       )}
 
+      {/* Cache Info */}
+      {cacheInfo && cacheInfo.totalSongs > 0 && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.5 }}
+          className="mt-6"
+        >
+          <GlassCard className="p-4 max-w-md mx-auto bg-white/5">
+            <div className="text-center">
+              <h4 className="text-sm font-semibold text-white mb-2">Cache Status</h4>
+              <div className="grid grid-cols-2 gap-4 text-xs text-gray-400">
+                <div>
+                  <p className="font-medium">Total Songs</p>
+                  <p className="text-neon-purple">{cacheInfo.totalSongs}</p>
+                </div>
+                <div>
+                  <p className="font-medium">Genres</p>
+                  <p className="text-neon-purple">{cacheInfo.genresCount}</p>
+                </div>
+              </div>
+              {cacheInfo.lastUpdated && (
+                <p className="text-xs text-gray-500 mt-2">
+                  Last updated: {new Date(cacheInfo.lastUpdated).toLocaleString()}
+                </p>
+              )}
+              {cacheInfo.isExpired && (
+                <p className="text-xs text-yellow-400 mt-1">
+                  ⚠️ Cache expired - refresh recommended
+                </p>
+              )}
+            </div>
+          </GlassCard>
+        </motion.div>
+      )}
+
       {/* Help Text */}
-      {selectedSongs.length === 0 && (
+      {selectedSongs.length === 0 && songs.length > 0 && (
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -442,6 +507,28 @@ export const SongSelector: React.FC<SongSelectorProps> = ({
           <p className="text-gray-500 text-sm">
             Select songs you love or skip this step to continue with default recommendations
           </p>
+        </motion.div>
+      )}
+
+      {/* No songs message */}
+      {!isLoading && songs.length === 0 && selectedGenres.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="mt-6"
+        >
+          <GlassCard className="p-6 max-w-md mx-auto text-center">
+            <p className="text-gray-400 mb-4">
+              No songs available for the selected genres
+            </p>
+            <motion.button
+              onClick={refreshSongs}
+              disabled={!isOnline}
+              className="px-4 py-2 bg-neon-purple/20 text-neon-purple rounded-lg hover:bg-neon-purple/30 transition-colors disabled:opacity-50"
+            >
+              {isOnline ? 'Try Refreshing' : 'Connect to Internet'}
+            </motion.button>
+          </GlassCard>
         </motion.div>
       )}
     </div>
