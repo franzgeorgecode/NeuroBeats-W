@@ -47,13 +47,13 @@ export const SongCard: React.FC<SongCardProps> = ({
   onLike,
   className = '',
 }) => {
-  const [isLiked, setIsLiked] = useState(false);
   const [showActions, setShowActions] = useState(false);
-  const { currentTrack, isPlaying, setCurrentTrack, setIsPlaying } = usePlayerStore();
+  const { currentTrack, isPlaying, setCurrentTrack, setIsPlaying, toggleLike, isLiked: isLikedFn } = usePlayerStore();
   const navigate = useNavigate();
 
   const isCurrentTrack = currentTrack?.id === song.id;
   const isCurrentlyPlaying = isCurrentTrack && isPlaying;
+  const isLiked = isLikedFn(song.id);
 
   const formatDuration = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -95,7 +95,21 @@ export const SongCard: React.FC<SongCardProps> = ({
   };
 
   const handleLike = () => {
-    setIsLiked(!isLiked);
+    const track = {
+      id: song.id,
+      title: song.title,
+      artist: song.artist,
+      album: song.album || '',
+      duration: song.duration,
+      cover_url: song.cover_url,
+      audio_url: song.audio_url,
+      genre: '',
+      release_date: '',
+      plays_count: song.plays_count || 0,
+      likes_count: 0,
+      created_at: new Date().toISOString(),
+    };
+    toggleLike(track);
     onLike?.(song);
   };
 

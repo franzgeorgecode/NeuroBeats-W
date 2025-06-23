@@ -16,6 +16,9 @@ interface PlayerStore extends PlayerState {
   toggleShuffle: () => void;
   toggleRepeat: () => void;
   setQueue: (tracks: Track[]) => void;
+  likedSongs: Track[];
+  toggleLike: (track: Track) => void;
+  isLiked: (trackId: string) => boolean;
 }
 
 export const usePlayerStore = create<PlayerStore>()(
@@ -30,6 +33,7 @@ export const usePlayerStore = create<PlayerStore>()(
       currentIndex: 0,
       shuffle: false,
       repeat: 'none',
+      likedSongs: [],
       
       setCurrentTrack: (track) => {
         const { queue } = get();
@@ -147,6 +151,24 @@ export const usePlayerStore = create<PlayerStore>()(
         repeat: state.repeat === 'none' ? 'all' : 
                 state.repeat === 'all' ? 'one' : 'none'
       })),
+
+      toggleLike: (track) => set((state) => {
+        const isAlreadyLiked = state.likedSongs.some(liked => liked.id === track.id);
+        if (isAlreadyLiked) {
+          return {
+            likedSongs: state.likedSongs.filter(liked => liked.id !== track.id)
+          };
+        } else {
+          return {
+            likedSongs: [...state.likedSongs, track]
+          };
+        }
+      }),
+
+      isLiked: (trackId) => {
+        const { likedSongs } = get();
+        return likedSongs.some(liked => liked.id === trackId);
+      },
     }),
     {
       name: 'player-storage',
@@ -157,6 +179,7 @@ export const usePlayerStore = create<PlayerStore>()(
         queue: state.queue,
         currentIndex: state.currentIndex,
         currentTrack: state.currentTrack,
+        likedSongs: state.likedSongs,
       }),
     }
   )

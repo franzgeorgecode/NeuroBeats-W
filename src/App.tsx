@@ -22,6 +22,8 @@ import { LibraryPage } from './pages/LibraryPage';
 import { AIPlaylistPage } from './pages/AIPlaylistPage';
 import { AuthPage } from './pages/AuthPage';
 import { SearchPage } from './pages/SearchPage';
+import { RadioPage } from './pages/RadioPage';
+import { LikedSongsPage } from './pages/LikedSongsPage';
 import { ArtistPage } from './pages/ArtistPage';
 import { AlbumPage } from './pages/AlbumPage';
 import { UserProfile } from './components/auth/UserProfile';
@@ -142,9 +144,9 @@ function AppContent() {
       case 'ai-playlist':
         return <AIPlaylistPage />;
       case 'liked':
-        return <div className="pt-24 pb-32 px-6 text-white">Liked Songs - Coming Soon</div>;
+        return <LikedSongsPage />;
       case 'radio':
-        return <div className="pt-24 pb-32 px-6 text-white">Radio Page - Coming Soon</div>;
+        return <RadioPage />;
       case 'profile':
         return <UserProfile />;
       default:
