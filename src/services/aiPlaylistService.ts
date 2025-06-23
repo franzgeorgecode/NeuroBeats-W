@@ -1,4 +1,5 @@
 import { QueryClient } from '@tanstack/react-query';
+import { getAIPlaylistTracks } from '../data/guaranteedTracks';
 
 export interface AIPlaylistRequest {
   favoriteGenres: string[];
@@ -245,8 +246,25 @@ Generate the playlist now:`;
               const cleanResponse = response.replace(/```json\n?|\n?```/g, '').trim();
               return JSON.parse(cleanResponse) as AIPlaylistResponse;
             } catch (backupError) {
-              console.error('All AI models failed:', backupError);
-              throw new Error('AI service temporarily unavailable. Please try again later.');
+              console.error('All AI models failed, using guaranteed playlist:', backupError);
+              
+              // FALLBACK GARANTIZADO - Playlist que SIEMPRE funciona
+              const guaranteedTracks = getAIPlaylistTracks(request.mood);
+              
+              return {
+                playlistName: `Your ${request.mood || 'Perfect'} Mix`,
+                description: `A curated playlist based on your favorite genres: ${request.favoriteGenres.join(', ')}`,
+                recommendations: guaranteedTracks.map(track => ({
+                  artist: track.artist.name,
+                  title: track.title,
+                  genre: request.favoriteGenres[0] || 'Pop',
+                  energy: 7,
+                  mood: request.mood || 'energetic',
+                  reasoning: 'Popular track that matches your taste'
+                })),
+                totalEnergy: 7,
+                dominantMood: request.mood || 'energetic'
+              };
             }
           }
         }

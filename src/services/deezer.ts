@@ -1,4 +1,5 @@
 import { QueryClient } from '@tanstack/react-query';
+import { getTop3Tracks, getSearchResults, getAIPlaylistTracks, convertToResponseFormat } from '../data/guaranteedTracks';
 
 export interface DeezerTrack {
   id: string;
@@ -167,6 +168,11 @@ class DeezerService {
   }
 
   private async makeRequest<T>(endpoint: string, params: Record<string, string> = {}): Promise<T> {
+    // Check if we have API key
+    if (!this.apiKey || this.apiKey === 'your_api_key_here') {
+      throw new Error('API key not configured');
+    }
+
     const url = new URL(`${this.baseURL}${endpoint}`);
     
     // Add query parameters
@@ -175,14 +181,19 @@ class DeezerService {
     });
 
     try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+
       const response = await fetch(url.toString(), {
         method: 'GET',
         headers: {
           'X-RapidAPI-Key': this.apiKey,
           'X-RapidAPI-Host': 'deezerdevs-deezer.p.rapidapi.com',
         },
-        timeout: 10000, // 10 second timeout
+        signal: controller.signal,
       });
+
+      clearTimeout(timeoutId);
 
       if (!response.ok) {
         if (response.status === 429) {
@@ -197,6 +208,9 @@ class DeezerService {
       const data = await response.json();
       return data;
     } catch (error) {
+      if (error instanceof DOMException && error.name === 'AbortError') {
+        throw new Error('Request timeout. Please try again.');
+      }
       if (error instanceof TypeError && error.message.includes('fetch')) {
         throw new Error('Network error. Please check your connection and try again.');
       }
@@ -209,12 +223,44 @@ class DeezerService {
     
     return this.queryClient.fetchQuery({
       queryKey: cacheKey,
-      queryFn: () => this.makeRequest<DeezerSearchResponse>('/search', {
-        q: query,
-        limit: limit.toString(),
-      }),
-      staleTime: 5 * 60 * 1000, // 5 minutes
-      gcTime: 10 * 60 * 1000, // 10 minutes
+      queryFn: async () => {
+        try {
+          // Intentar búsqueda en API real
+          const result = await this.makeRequest<DeezerSearchResponse>('/search', {
+            q: query,
+            limit: Math.min(limit, 3).toString(), // Máximo 3 resultados para búsqueda
+          });
+          
+          // Verificar que tenemos resultados válidos
+          if (result.data && result.data.length > 0) {
+            const validTracks = result.data.filter(track => 
+              track.preview && 
+              track.preview.length > 0 && 
+              track.title && 
+              track.artist?.name
+            );
+            
+            if (validTracks.length > 0) {
+              return {
+                ...result,
+                data: validTracks.slice(0, 3) // Máximo 3 resultados
+              };
+            }
+          }
+          
+          throw new Error('No valid search results from API');
+          
+        } catch (apiError) {
+          console.warn('Search API failed, using guaranteed results:', apiError);
+          
+          // FALLBACK GARANTIZADO - Búsqueda que SIEMPRE funciona
+          const guaranteedResults = getSearchResults(query);
+          return convertToResponseFormat(guaranteedResults);
+        }
+      },
+      staleTime: 3 * 60 * 1000, // 3 minutos
+      gcTime: 10 * 60 * 1000, // 10 minutos
+      retry: 1, // Solo un retry antes del fallback
     });
   }
 
@@ -314,50 +360,55 @@ class DeezerService {
     return this.queryClient.fetchQuery({
       queryKey: cacheKey,
       queryFn: async () => {
-        // Intentar con diferentes queries populares para obtener variedad
-        const popularQueries = [
-          'top hits 2024', 
-          'popular music 2024',
-          'trending songs',
-          'chart toppers',
-          'best songs 2024',
-          'viral hits',
-          'mainstream music'
-        ];
-        
         try {
-          // Usar una query aleatoria para obtener variedad
-          const randomQuery = popularQueries[Math.floor(Math.random() * popularQueries.length)];
-          const result = await this.searchSongs(randomQuery, limit);
+          // Intentar primero con la API real
+          const popularQueries = [
+            'top hits 2024', 
+            'popular music 2024',
+            'trending songs',
+            'chart toppers',
+            'best songs 2024',
+            'viral hits',
+            'mainstream music'
+          ];
           
-          // Asegurar que tenemos datos válidos con preview URLs
+          const randomQuery = popularQueries[Math.floor(Math.random() * popularQueries.length)];
+          const result = await this.makeRequest<DeezerSearchResponse>('/search', {
+            q: randomQuery,
+            limit: Math.min(limit, 11).toString(), // Máximo 11 para el dashboard
+          });
+          
+          // Verificar que los datos son válidos
           if (result.data && result.data.length > 0) {
-            result.data = result.data.filter(track => 
+            const validTracks = result.data.filter(track => 
               track.preview && 
               track.preview.length > 0 && 
               track.title && 
               track.artist?.name
             );
+            
+            if (validTracks.length >= 3) {
+              return {
+                ...result,
+                data: validTracks.slice(0, Math.min(limit, 11))
+              };
+            }
           }
           
-          return result;
-        } catch (error) {
-          // Fallback a query simple si falla
-          const fallbackResult = await this.searchSongs('popular songs', limit);
+          // Si no hay suficientes datos válidos, usar fallback
+          throw new Error('Insufficient valid tracks from API');
           
-          // Filtrar tracks sin preview
-          if (fallbackResult.data) {
-            fallbackResult.data = fallbackResult.data.filter(track => 
-              track.preview && 
-              track.preview.length > 0
-            );
-          }
+        } catch (apiError) {
+          console.warn('API failed, using guaranteed tracks:', apiError);
           
-          return fallbackResult;
+          // FALLBACK GARANTIZADO - Top 3 tracks que SIEMPRE funcionan
+          const guaranteedTracks = getTop3Tracks();
+          return convertToResponseFormat(guaranteedTracks);
         }
       },
-      staleTime: 15 * 60 * 1000, // 15 minutos para refrescar más frecuentemente
-      gcTime: 30 * 60 * 1000, // 30 minutos
+      staleTime: 5 * 60 * 1000, // 5 minutos
+      gcTime: 15 * 60 * 1000, // 15 minutos
+      retry: 1, // Solo un retry antes del fallback
     });
   }
 

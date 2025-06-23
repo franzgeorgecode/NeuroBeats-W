@@ -28,7 +28,7 @@ export const SearchPage: React.FC = () => {
   
   const debouncedQuery = useDebounce(query, 500);
   const { useSearchSongs, deezerService } = useDeezer();
-  const { data: searchResults, isLoading, error } = useSearchSongs(debouncedQuery, 11);
+  const { data: searchResults, isLoading, error } = useSearchSongs(debouncedQuery, 3); // Solo 3 resultados garantizados
   const { setCurrentTrack, setIsPlaying, addToQueue } = usePlayerStore();
   const { showToast } = useToast();
 

@@ -13,7 +13,7 @@ import { getAllSongs } from '../data/mockSongs';
 
 export const HomePage: React.FC = () => {
   const { useTopTracks, deezerService } = useDeezer();
-  const { data: topTracksData, isLoading, error } = useTopTracks(20);
+  const { data: topTracksData, isLoading, error } = useTopTracks(3); // Solo 3 tracks para garantizar funcionamiento
   const { setCurrentTrack, addToQueue, setIsPlaying } = usePlayerStore();
   const { setCurrentPage } = useAppStore();
   const { showToast } = useToast();
@@ -122,7 +122,7 @@ export const HomePage: React.FC = () => {
           <div className="flex items-center mb-6">
             <TrendingUp className="w-6 h-6 text-neon-purple mr-3" />
             <h2 className="text-2xl font-space font-bold text-white">
-              {error ? 'Popular Tracks' : 'Top 11 Tracks'}
+              {error ? 'Popular Tracks' : 'Top 3 Tracks'}
             </h2>
             {error && (
               <span className="ml-3 text-xs bg-yellow-500/20 text-yellow-400 px-2 py-1 rounded-full">
@@ -147,7 +147,7 @@ export const HomePage: React.FC = () => {
             </div>
           ) : hasValidTracks ? (
             <div className="space-y-2">
-              {tracksToShow.slice(0, 11).map((track, index) => (
+              {tracksToShow.slice(0, 3).map((track, index) => (
                 <motion.div
                   key={track.id}
                   initial={{ opacity: 0, x: -20 }}
