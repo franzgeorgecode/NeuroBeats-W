@@ -200,6 +200,16 @@ export const AuthPage: React.FC = () => {
                         socialButtonsPlacement: "top",
                         showOptionalFields: false,
                       },
+                      localization: {
+                        dividerText: "or continue with email",
+                        formFieldLabel__emailAddress: "Email address",
+                        formFieldInputPlaceholder__emailAddress: "Enter your email",
+                        formFieldLabel__password: "Password", 
+                        formFieldInputPlaceholder__password: "Create a password",
+                        formButtonPrimary: "Create account",
+                        footerActionText: "Already have an account?",
+                        footerActionLink: "Sign in",
+                      },
                     }}
                     redirectUrl="/"
                     signInUrl="/auth?mode=sign-in"
@@ -233,6 +243,16 @@ export const AuthPage: React.FC = () => {
                       layout: {
                         socialButtonsPlacement: "top",
                         showOptionalFields: false,
+                      },
+                      localization: {
+                        dividerText: "or continue with email",
+                        formFieldLabel__emailAddress: "Email address",
+                        formFieldInputPlaceholder__emailAddress: "Enter your email",
+                        formFieldLabel__password: "Password", 
+                        formFieldInputPlaceholder__password: "Enter your password",
+                        formButtonPrimary: "Sign in",
+                        footerActionText: "Don't have an account?",
+                        footerActionLink: "Sign up",
                       },
                     }}
                     redirectUrl="/"
