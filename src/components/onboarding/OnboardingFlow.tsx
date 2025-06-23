@@ -80,19 +80,17 @@ export const OnboardingFlow: React.FC = () => {
         console.log('Updating user with skip data:', updateData);
         await user.update(updateData);
         console.log('User updated successfully');
+        
+        // Force re-render by updating the hook dependency
+        await user.reload();
       }
       
-      showToast('Setup completed! Redirecting to dashboard...', 'success');
+      showToast('Setup completed! Welcome to NeuroBeats!', 'success');
       
-      // Multiple fallback methods for redirect
+      // Force page reload to ensure state updates
       setTimeout(() => {
-        try {
-          window.location.replace('/');
-        } catch (e) {
-          window.location.href = '/';
-          setTimeout(() => window.location.reload(), 100);
-        }
-      }, 1000);
+        window.location.reload();
+      }, 500);
     } catch (error) {
       console.error('Error skipping onboarding:', error);
       showToast('Error completing setup. Please try again.', 'error');
@@ -119,20 +117,17 @@ export const OnboardingFlow: React.FC = () => {
         console.log('Updating user with complete data:', updateData);
         await user.update(updateData);
         console.log('User updated successfully for completion');
+        
+        // Force re-render by reloading user data
+        await user.reload();
       }
       
-      // Show success message and redirect immediately
-      showToast('Welcome to NeuroBeats! Redirecting to dashboard...', 'success');
+      showToast('Preferences saved! Welcome to NeuroBeats!', 'success');
       
-      // Multiple fallback methods for redirect
+      // Force page reload to ensure state updates
       setTimeout(() => {
-        try {
-          window.location.replace('/');
-        } catch (e) {
-          window.location.href = '/';
-          setTimeout(() => window.location.reload(), 100);
-        }
-      }, 1500);
+        window.location.reload();
+      }, 1000);
     } catch (error) {
       console.error('Error saving preferences:', error);
       showToast('Error saving preferences. Please try again.', 'error');
@@ -273,37 +268,24 @@ export const OnboardingFlow: React.FC = () => {
               </div>
 
               {currentStep === 2 ? (
-                <div className="flex flex-col space-y-3">
-                  <NeonButton
-                    variant="primary"
-                    onClick={handleComplete}
-                    disabled={isLoading}
-                    className="flex items-center space-x-2"
-                  >
-                    <Check className="w-4 h-4" />
-                    <span>
-                      {isLoading 
-                        ? 'Saving preferences...' 
-                        : selectedSongs.length === 5 
-                          ? 'Complete Setup' 
-                          : selectedSongs.length > 0 
-                            ? `Continue with ${selectedSongs.length} songs`
-                            : 'Complete Setup'
-                      }
-                    </span>
-                  </NeonButton>
-                  
-                  {/* Debug button - remove after testing */}
-                  <button
-                    onClick={() => {
-                      console.log('Debug: Force redirect to dashboard');
-                      window.location.replace('/');
-                    }}
-                    className="text-xs text-gray-500 hover:text-white transition-colors"
-                  >
-                    Force Dashboard (Debug)
-                  </button>
-                </div>
+                <NeonButton
+                  variant="primary"
+                  onClick={handleComplete}
+                  disabled={isLoading}
+                  className="flex items-center space-x-2"
+                >
+                  <Check className="w-4 h-4" />
+                  <span>
+                    {isLoading 
+                      ? 'Saving preferences...' 
+                      : selectedSongs.length === 5 
+                        ? 'Complete Setup' 
+                        : selectedSongs.length > 0 
+                          ? `Continue with ${selectedSongs.length} songs`
+                          : 'Complete Setup'
+                    }
+                  </span>
+                </NeonButton>
               ) : (
                 <NeonButton
                   variant="primary"
@@ -344,35 +326,22 @@ export const OnboardingFlow: React.FC = () => {
                   <p className="text-gray-400 mb-6">
                     You can always set up your preferences later in your profile settings.
                   </p>
-                  <div className="flex flex-col space-y-3">
-                    <div className="flex space-x-3">
-                      <NeonButton
-                        variant="ghost"
-                        onClick={() => setShowSkipConfirmation(false)}
-                        className="flex-1"
-                      >
-                        Cancel
-                      </NeonButton>
-                      <NeonButton
-                        variant="primary"
-                        onClick={confirmSkip}
-                        disabled={isLoading}
-                        className="flex-1"
-                      >
-                        {isLoading ? 'Saving & Redirecting...' : 'Skip to Dashboard'}
-                      </NeonButton>
-                    </div>
-                    
-                    {/* Debug option */}
-                    <button
-                      onClick={() => {
-                        console.log('Debug: Force skip to dashboard');
-                        window.location.replace('/');
-                      }}
-                      className="text-xs text-gray-500 hover:text-white transition-colors"
+                  <div className="flex space-x-3">
+                    <NeonButton
+                      variant="ghost"
+                      onClick={() => setShowSkipConfirmation(false)}
+                      className="flex-1"
                     >
-                      Force Skip (Debug)
-                    </button>
+                      Cancel
+                    </NeonButton>
+                    <NeonButton
+                      variant="primary"
+                      onClick={confirmSkip}
+                      disabled={isLoading}
+                      className="flex-1"
+                    >
+                      {isLoading ? 'Saving & Redirecting...' : 'Skip to Dashboard'}
+                    </NeonButton>
                   </div>
                 </GlassCard>
               </motion.div>

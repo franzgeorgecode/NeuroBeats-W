@@ -81,7 +81,11 @@ export const MusicPlayer: React.FC<MusicPlayerProps> = ({ className = '' }) => {
     const handleError = (e: Event) => {
       console.error('Audio playback error:', e);
       setIsPlaying(false);
-      showToast('Error playing audio', 'error');
+      // Only show error toast if it's not a CORS or network issue with preview
+      const target = e.target as HTMLAudioElement;
+      if (target && target.src) {
+        showToast('Preview not available for this track', 'warning');
+      }
     };
 
     audio.addEventListener('timeupdate', handleTimeUpdate);
@@ -225,7 +229,12 @@ export const MusicPlayer: React.FC<MusicPlayerProps> = ({ className = '' }) => {
   return (
     <>
       {/* Hidden audio element */}
-      <audio ref={audioRef} preload="metadata" />
+      <audio 
+        ref={audioRef} 
+        src={currentTrack?.audio_url} 
+        preload="metadata" 
+        crossOrigin="anonymous"
+      />
 
       {/* Mini Player */}
       <AnimatePresence>

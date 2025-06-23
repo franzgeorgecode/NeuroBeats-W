@@ -27,7 +27,7 @@ export const useOnboarding = () => {
       // Default to showing onboarding if there's an error checking
       setShouldShowOnboarding(true);
     }
-  }, [user, isLoaded, user?.publicMetadata?.onboardingCompleted]);
+  }, [user, isLoaded, user?.publicMetadata]);
 
   return {
     shouldShowOnboarding,
