@@ -66,9 +66,10 @@ export const HomePage: React.FC = () => {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  // Determinar qué datos usar
-  const tracksToShow = error ? fallbackTracks : topTracksData?.data;
+  // Determinar qué datos usar - Mejorar manejo de datos
+  const tracksToShow = error ? fallbackTracks : topTracksData?.data || [];
   const isLoadingState = isLoading && !error;
+  const hasValidTracks = tracksToShow && tracksToShow.length > 0;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-dark-500 via-dark-600 to-dark-700 pt-24 pb-32">
@@ -121,7 +122,7 @@ export const HomePage: React.FC = () => {
           <div className="flex items-center mb-6">
             <TrendingUp className="w-6 h-6 text-neon-purple mr-3" />
             <h2 className="text-2xl font-space font-bold text-white">
-              {error ? 'Popular Tracks' : 'Top Tracks'}
+              {error ? 'Popular Tracks' : 'Top 11 Tracks'}
             </h2>
             {error && (
               <span className="ml-3 text-xs bg-yellow-500/20 text-yellow-400 px-2 py-1 rounded-full">
@@ -144,9 +145,9 @@ export const HomePage: React.FC = () => {
                 </GlassCard>
               ))}
             </div>
-          ) : (
+          ) : hasValidTracks ? (
             <div className="space-y-2">
-              {tracksToShow?.slice(0, 10).map((track, index) => (
+              {tracksToShow.slice(0, 11).map((track, index) => (
                 <motion.div
                   key={track.id}
                   initial={{ opacity: 0, x: -20 }}
@@ -158,9 +159,11 @@ export const HomePage: React.FC = () => {
                       id: track.id,
                       title: track.title,
                       artist: track.artist.name,
-                      album: track.album?.title,
+                      album: track.album?.title || `${track.title} - Single`,
+                      artistId: track.artist.id,
+                      albumId: track.album?.id,
                       duration: track.duration,
-                      cover_url: track.album?.cover_xl || track.album?.cover_big || track.album?.cover_medium,
+                      cover_url: track.album?.cover_xl || track.album?.cover_big || track.album?.cover_medium || track.album?.cover,
                       audio_url: track.preview,
                       plays_count: track.rank,
                     }}
@@ -172,6 +175,20 @@ export const HomePage: React.FC = () => {
                   />
                 </motion.div>
               ))}
+            </div>
+          ) : (
+            <div className="text-center py-12">
+              <div className="w-16 h-16 bg-gray-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Music2 className="w-8 h-8 text-gray-400" />
+              </div>
+              <h3 className="text-xl font-semibold text-white mb-2">No tracks available</h3>
+              <p className="text-gray-400 mb-4">Unable to load tracks at the moment</p>
+              <button 
+                onClick={() => window.location.reload()} 
+                className="px-4 py-2 bg-neon-purple hover:bg-neon-purple/80 text-white rounded-lg transition-colors"
+              >
+                Try Again
+              </button>
             </div>
           )}
         </motion.section>

@@ -55,10 +55,10 @@ export const AudioPreview: React.FC<AudioPreviewProps> = ({
       setIsLoading(false);
     };
 
-    const handleError = () => {
+    const handleError = (e: any) => {
       setIsLoading(false);
       setIsPlaying(false);
-      console.warn('Audio preview failed to load:', audioUrl);
+      console.warn('Audio preview failed to load:', audioUrl, e.target?.error);
     };
 
     audio.addEventListener('loadedmetadata', handleLoadedMetadata);
@@ -98,6 +98,20 @@ export const AudioPreview: React.FC<AudioPreviewProps> = ({
         // Reset to beginning if at the end
         if (currentTime >= duration - 1) {
           audio.currentTime = 0;
+          setCurrentTime(0);
+        }
+        
+        // Ensure audio is loaded before playing
+        if (audio.readyState < 2) {
+          setIsLoading(true);
+          await new Promise((resolve) => {
+            const handleCanPlay = () => {
+              audio.removeEventListener('canplay', handleCanPlay);
+              resolve(void 0);
+            };
+            audio.addEventListener('canplay', handleCanPlay);
+          });
+          setIsLoading(false);
         }
         
         await audio.play();

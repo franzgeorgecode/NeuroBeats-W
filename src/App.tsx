@@ -41,7 +41,7 @@ const queryClient = new QueryClient({
 });
 
 function AppContent() {
-  const { sidebarCollapsed, currentPage, setCurrentPage, theme } = useAppStore();
+  const { sidebarCollapsed, currentPage, theme } = useAppStore();
   const { isSignedIn, isLoaded } = useAuth();
   const { shouldShowOnboarding, isLoading: onboardingLoading } = useOnboarding();
   const { accessibility } = useSettingsStore();

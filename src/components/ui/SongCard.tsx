@@ -187,7 +187,7 @@ export const SongCard: React.FC<SongCardProps> = ({
                 {formatDuration(song.duration)}
               </span>
               
-              {song.audio_url && (
+              {song.audio_url && song.audio_url.length > 0 && (
                 <div onClick={(e) => e.stopPropagation()}>
                   <AudioPreview
                     audioUrl={song.audio_url}
@@ -318,7 +318,7 @@ export const SongCard: React.FC<SongCardProps> = ({
           </div>
 
           <div className="flex items-center space-x-1">
-            {song.audio_url && (
+            {song.audio_url && song.audio_url.length > 0 && (
               <div onClick={(e) => e.stopPropagation()}>
                 <AudioPreview
                   audioUrl={song.audio_url}

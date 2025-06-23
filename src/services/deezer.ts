@@ -317,18 +317,43 @@ class DeezerService {
         // Intentar con diferentes queries populares para obtener variedad
         const popularQueries = [
           'top hits 2024', 
-          'popular music',
+          'popular music 2024',
           'trending songs',
-          'chart toppers'
+          'chart toppers',
+          'best songs 2024',
+          'viral hits',
+          'mainstream music'
         ];
         
         try {
           // Usar una query aleatoria para obtener variedad
           const randomQuery = popularQueries[Math.floor(Math.random() * popularQueries.length)];
-          return await this.searchSongs(randomQuery, limit);
+          const result = await this.searchSongs(randomQuery, limit);
+          
+          // Asegurar que tenemos datos válidos con preview URLs
+          if (result.data && result.data.length > 0) {
+            result.data = result.data.filter(track => 
+              track.preview && 
+              track.preview.length > 0 && 
+              track.title && 
+              track.artist?.name
+            );
+          }
+          
+          return result;
         } catch (error) {
           // Fallback a query simple si falla
-          return await this.searchSongs('music', limit);
+          const fallbackResult = await this.searchSongs('popular songs', limit);
+          
+          // Filtrar tracks sin preview
+          if (fallbackResult.data) {
+            fallbackResult.data = fallbackResult.data.filter(track => 
+              track.preview && 
+              track.preview.length > 0
+            );
+          }
+          
+          return fallbackResult;
         }
       },
       staleTime: 15 * 60 * 1000, // 15 minutos para refrescar más frecuentemente
