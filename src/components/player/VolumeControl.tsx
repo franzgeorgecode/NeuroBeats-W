@@ -138,7 +138,8 @@ export const VolumeControl: React.FC<VolumeControlProps> = ({
             onDrag={(_, info) => {
               if (!sliderRef.current) return;
               const rect = sliderRef.current.getBoundingClientRect();
-              const newVolume = Math.max(0, Math.min(1, info.point.x / rect.width));
+              const x = info.point?.x || 0;
+              const newVolume = Math.max(0, Math.min(1, (x - rect.left) / rect.width));
               onVolumeChange(newVolume);
             }}
           />
