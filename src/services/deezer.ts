@@ -229,9 +229,33 @@ class DeezerService {
     
     return this.queryClient.fetchQuery({
       queryKey: cacheKey,
-      queryFn: () => this.searchSongs(genreName, limit),
-      staleTime: 15 * 60 * 1000, // 15 minutes
-      gcTime: 30 * 60 * 1000, // 30 minutes
+      queryFn: async () => {
+        // Mejorar las búsquedas por género con términos más específicos
+        const genreQueries = {
+          'Pop': ['pop hits', 'popular pop', 'top pop songs'],
+          'Rock': ['rock classics', 'rock hits', 'best rock songs'],
+          'Hip Hop': ['hip hop hits', 'rap songs', 'hip hop top'],
+          'Electronic': ['electronic music', 'edm hits', 'electronic dance'],
+          'R&B': ['r&b hits', 'rnb songs', 'soul music'],
+          'Jazz': ['jazz classics', 'smooth jazz', 'jazz standards'],
+          'Classical': ['classical music', 'orchestral', 'classical hits'],
+          'Reggae': ['reggae classics', 'reggae hits', 'bob marley'],
+          'Country': ['country hits', 'country music', 'country songs'],
+          'Latin': ['latin hits', 'spanish music', 'reggaeton']
+        };
+
+        const queries = genreQueries[genreName as keyof typeof genreQueries] || [genreName];
+        const randomQuery = queries[Math.floor(Math.random() * queries.length)];
+        
+        try {
+          return await this.searchSongs(randomQuery, limit);
+        } catch (error) {
+          // Fallback a búsqueda simple
+          return await this.searchSongs(genreName, limit);
+        }
+      },
+      staleTime: 10 * 60 * 1000, // 10 minutos para actualizar más frecuentemente
+      gcTime: 20 * 60 * 1000, // 20 minutos
     });
   }
 
@@ -289,9 +313,26 @@ class DeezerService {
     
     return this.queryClient.fetchQuery({
       queryKey: cacheKey,
-      queryFn: () => this.searchSongs('popular hits', limit),
-      staleTime: 30 * 60 * 1000, // 30 minutes
-      gcTime: 60 * 60 * 1000, // 1 hour
+      queryFn: async () => {
+        // Intentar con diferentes queries populares para obtener variedad
+        const popularQueries = [
+          'top hits 2024', 
+          'popular music',
+          'trending songs',
+          'chart toppers'
+        ];
+        
+        try {
+          // Usar una query aleatoria para obtener variedad
+          const randomQuery = popularQueries[Math.floor(Math.random() * popularQueries.length)];
+          return await this.searchSongs(randomQuery, limit);
+        } catch (error) {
+          // Fallback a query simple si falla
+          return await this.searchSongs('music', limit);
+        }
+      },
+      staleTime: 15 * 60 * 1000, // 15 minutos para refrescar más frecuentemente
+      gcTime: 30 * 60 * 1000, // 30 minutos
     });
   }
 

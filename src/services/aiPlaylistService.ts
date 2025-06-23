@@ -63,8 +63,9 @@ class AIPlaylistService {
 
   // Free models available on OpenRouter
   private models = {
-    primary: 'microsoft/wizardlm-2-8x22b', // Free tier model
-    fallback: 'meta-llama/llama-3.1-8b-instruct:free', // Backup free model
+    primary: 'meta-llama/llama-3.1-8b-instruct:free', // Reliable free model
+    fallback: 'mistralai/mistral-7b-instruct:free', // Alternative free model
+    backup: 'google/gemma-2-9b-it:free', // Third option free model
   };
 
   constructor(queryClient: QueryClient) {
@@ -209,7 +210,9 @@ Generate the playlist now:`;
           return parsed as AIPlaylistResponse;
         } catch (error) {
           // Fallback to secondary model if primary fails
-          if (error instanceof Error && error.message.includes('rate limit')) {
+          console.warn('Primary AI model failed:', error);
+          
+          try {
             const response = await this.makeRequest<string>([
               {
                 role: 'system',
@@ -223,9 +226,29 @@ Generate the playlist now:`;
 
             const cleanResponse = response.replace(/```json\n?|\n?```/g, '').trim();
             return JSON.parse(cleanResponse) as AIPlaylistResponse;
+          } catch (secondError) {
+            console.warn('Fallback AI model failed:', secondError);
+            
+            // Try backup model
+            try {
+              const response = await this.makeRequest<string>([
+                {
+                  role: 'system',
+                  content: 'Create a music playlist. Return JSON format only.',
+                },
+                {
+                  role: 'user',
+                  content: prompt,
+                },
+              ], this.models.backup);
+
+              const cleanResponse = response.replace(/```json\n?|\n?```/g, '').trim();
+              return JSON.parse(cleanResponse) as AIPlaylistResponse;
+            } catch (backupError) {
+              console.error('All AI models failed:', backupError);
+              throw new Error('AI service temporarily unavailable. Please try again later.');
+            }
           }
-          
-          throw error;
         }
       },
       staleTime: 5 * 60 * 1000, // 5 minutes

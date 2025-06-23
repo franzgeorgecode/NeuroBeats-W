@@ -1,9 +1,25 @@
-import React, { useState, useRef, useEffect, useMemo } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Play, Pause, Check, Music } from 'lucide-react';
+import { Play, Pause, Check, RefreshCw } from 'lucide-react';
 import { GlassCard } from '../ui/GlassCard';
-import { getSongsByGenres, type MockSong } from '../../data/mockSongs';
+import { getSongsByGenres } from '../../data/mockSongs';
+import { useDeezer } from '../../hooks/useDeezer';
+import { useToast } from '../../hooks/useToast';
 import type { SelectedSong } from './OnboardingFlow';
+
+interface DeezerTrack {
+  id: string;
+  title: string;
+  duration: number;
+  preview: string;
+  artist: { name: string };
+  album: { 
+    cover_medium: string;
+    cover_big: string;
+    title: string;
+  };
+  sourceGenre?: string;
+}
 
 interface SongSelectorProps {
   selectedGenres: string[];
@@ -17,38 +33,114 @@ export const SongSelector: React.FC<SongSelectorProps> = ({
   onSongToggle,
 }) => {
   const [playingPreview, setPlayingPreview] = useState<string | null>(null);
-  const [isInitialLoading, setIsInitialLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
+  const [deezerSongs, setDeezerSongs] = useState<DeezerTrack[]>([]);
+  const [refreshKey, setRefreshKey] = useState(0);
   const audioRef = useRef<HTMLAudioElement>(null);
+  const { deezerService } = useDeezer();
+  const { showToast } = useToast();
 
-  // Usar useMemo para evitar re-renders innecesarios
-  const availableSongs = useMemo(() => {
-    const songs = getSongsByGenres(selectedGenres);
-    return songs.slice(0, 15); // Limitar a 15 canciones máximo
-  }, [selectedGenres]);
-
-  // Simular loading inicial solo una vez
+  // Cargar canciones desde Deezer basadas en los géneros seleccionados
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsInitialLoading(false);
-    }, 1000); // 1 segundo de loading para simular carga
+    const loadSongsFromDeezer = async () => {
+      if (selectedGenres.length === 0) {
+        setIsLoading(false);
+        return;
+      }
 
-    return () => clearTimeout(timer);
-  }, []); // Solo se ejecuta una vez al montar
+      setIsLoading(true);
+      try {
+        const allSongs: DeezerTrack[] = [];
+        
+        // Obtener top 5 de cada género seleccionado
+        for (const genre of selectedGenres) {
+          try {
+            const genreSongs = await deezerService.getSongsByGenre(genre, 5);
+            if (genreSongs.data && genreSongs.data.length > 0) {
+              // Marcar las canciones con su género para mostrar
+              const songsWithGenre = genreSongs.data.slice(0, 5).map(song => ({
+                ...song,
+                sourceGenre: genre
+              }));
+              allSongs.push(...songsWithGenre);
+            }
+          } catch (error) {
+            console.warn(`Error loading songs for genre ${genre}:`, error);
+          }
+        }
 
-  const handlePreviewPlay = (song: SelectedSong) => {
+        // Si no se pudieron cargar canciones de Deezer, usar fallback
+        if (allSongs.length === 0) {
+          const fallbackSongs = getSongsByGenres(selectedGenres);
+          const fallbackConverted = fallbackSongs.slice(0, 25).map(mockSong => ({
+            id: mockSong.id,
+            title: mockSong.title,
+            duration: mockSong.duration,
+            preview: mockSong.preview_url,
+            artist: { name: mockSong.artist },
+            album: { 
+              cover_medium: mockSong.cover_url,
+              cover_big: mockSong.cover_url,
+              title: `${mockSong.title} - Single`
+            },
+            sourceGenre: mockSong.genre
+          }));
+          setDeezerSongs(fallbackConverted);
+          showToast('Using offline songs', 'info');
+        } else {
+          setDeezerSongs(allSongs);
+          showToast(`Loaded ${allSongs.length} songs from Deezer`, 'success');
+        }
+      } catch (error) {
+        console.error('Error loading songs:', error);
+        // Usar canciones mock como fallback
+        const fallbackSongs = getSongsByGenres(selectedGenres);
+        const fallbackConverted = fallbackSongs.slice(0, 25).map(mockSong => ({
+          id: mockSong.id,
+          title: mockSong.title,
+          duration: mockSong.duration,
+          preview: mockSong.preview_url,
+          artist: { name: mockSong.artist },
+          album: { 
+            cover_medium: mockSong.cover_url,
+            cover_big: mockSong.cover_url,
+            title: `${mockSong.title} - Single`
+          },
+          sourceGenre: mockSong.genre
+        }));
+        setDeezerSongs(fallbackConverted);
+        showToast('Using offline songs', 'warning');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadSongsFromDeezer();
+  }, [selectedGenres, deezerService, refreshKey, showToast]);
+
+  const handlePreviewPlay = (deezerTrack: DeezerTrack) => {
     if (!audioRef.current) return;
 
     try {
-      if (playingPreview === song.id) {
+      if (playingPreview === deezerTrack.id) {
         audioRef.current.pause();
         setPlayingPreview(null);
       } else {
-        // Para el demo, no reproducimos audio real
-        setPlayingPreview(song.id);
-        // Simular que el audio termina después de 30 segundos
-        setTimeout(() => {
-          setPlayingPreview(null);
-        }, 30000);
+        // Reproducir preview de Deezer (30 segundos máximo)
+        if (deezerTrack.preview && audioRef.current) {
+          audioRef.current.src = deezerTrack.preview;
+          audioRef.current.play()
+            .then(() => {
+              setPlayingPreview(deezerTrack.id);
+            })
+            .catch((error) => {
+              console.warn('Audio preview error:', error);
+              showToast('Audio preview not available', 'warning');
+              setPlayingPreview(null);
+            });
+        } else {
+          showToast('Audio preview not available', 'warning');
+        }
       }
     } catch (error) {
       console.warn('Audio preview error:', error);
@@ -56,14 +148,19 @@ export const SongSelector: React.FC<SongSelectorProps> = ({
     }
   };
 
-  const convertToSelectedSong = (mockSong: MockSong): SelectedSong => {
+  const refreshSongs = () => {
+    setRefreshKey(prev => prev + 1);
+    showToast('Refreshing songs...', 'info');
+  };
+
+  const convertDeezerToSelectedSong = (deezerTrack: DeezerTrack): SelectedSong => {
     return {
-      id: mockSong.id,
-      title: mockSong.title,
-      artist: mockSong.artist,
-      preview_url: mockSong.preview_url,
-      cover_url: mockSong.cover_url,
-      duration: mockSong.duration,
+      id: deezerTrack.id,
+      title: deezerTrack.title,
+      artist: deezerTrack.artist.name,
+      preview_url: deezerTrack.preview,
+      cover_url: deezerTrack.album.cover_medium || deezerTrack.album.cover_big,
+      duration: deezerTrack.duration,
     };
   };
 
@@ -74,7 +171,7 @@ export const SongSelector: React.FC<SongSelectorProps> = ({
   };
 
   // Loading state
-  if (isInitialLoading) {
+  if (isLoading) {
     return (
       <div className="text-center">
         <motion.div
@@ -83,10 +180,13 @@ export const SongSelector: React.FC<SongSelectorProps> = ({
           className="mb-8"
         >
           <h2 className="text-4xl font-space font-bold text-white mb-4">
-            Curating Your Perfect Songs
+            Loading Top 5 Songs per Genre
           </h2>
           <p className="text-xl text-gray-300">
-            Finding the best tracks based on your preferences...
+            Getting the best tracks from Deezer for your selected genres...
+          </p>
+          <p className="text-sm text-neon-purple mt-2">
+            {selectedGenres.join(', ')}
           </p>
         </motion.div>
 
@@ -122,12 +222,23 @@ export const SongSelector: React.FC<SongSelectorProps> = ({
         <p className="text-lg text-neon-purple font-medium">
           {selectedSongs.length}/5 songs selected
         </p>
-        <p className="text-sm text-gray-400 mt-2">
-          {selectedGenres.length > 0 
-            ? `Curated for: ${selectedGenres.join(', ')}`
-            : 'Popular tracks for you'
-          }
-        </p>
+        <div className="flex items-center justify-center space-x-4 mt-2">
+          <p className="text-sm text-gray-400">
+            {selectedGenres.length > 0 
+              ? `Top 5 songs per genre: ${selectedGenres.join(', ')}`
+              : 'Popular tracks for you'
+            }
+          </p>
+          <motion.button
+            onClick={refreshSongs}
+            className="p-2 text-neon-purple hover:text-neon-pink transition-colors"
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
+            title="Refresh songs"
+          >
+            <RefreshCw className="w-4 h-4" />
+          </motion.button>
+        </div>
       </motion.div>
 
       <motion.div
@@ -136,8 +247,8 @@ export const SongSelector: React.FC<SongSelectorProps> = ({
         transition={{ duration: 0.6, delay: 0.2 }}
         className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto"
       >
-        {availableSongs.map((mockSong, index) => {
-          const song = convertToSelectedSong(mockSong);
+        {deezerSongs.map((deezerTrack, index) => {
+          const song = convertDeezerToSelectedSong(deezerTrack);
           const isSelected = selectedSongs.some(s => s.id === song.id);
           const isPlaying = playingPreview === song.id;
           const canSelect = selectedSongs.length < 5 || isSelected;
@@ -205,7 +316,7 @@ export const SongSelector: React.FC<SongSelectorProps> = ({
                       whileTap={{ scale: 0.9 }}
                       onClick={(e) => {
                         e.stopPropagation();
-                        handlePreviewPlay(song);
+                        handlePreviewPlay(deezerTrack);
                       }}
                     >
                       {isPlaying ? (
@@ -236,7 +347,7 @@ export const SongSelector: React.FC<SongSelectorProps> = ({
                         {formatDuration(song.duration)}
                       </p>
                       <span className="text-xs bg-neon-purple/20 text-neon-purple px-2 py-1 rounded-full">
-                        {mockSong.genre}
+                        {deezerTrack.sourceGenre || 'Music'}
                       </span>
                     </div>
                   </div>
