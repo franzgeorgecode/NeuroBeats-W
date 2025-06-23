@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Play, Heart, MoreHorizontal, TrendingUp, Music2, Headphones, Settings } from 'lucide-react';
 import { GlassCard } from '../components/ui/GlassCard';
+import { SongCard } from '../components/ui/SongCard';
 import { NeonButton } from '../components/ui/NeonButton';
 import { PreferencesCard } from '../components/user/PreferencesCard';
 import { useDeezer } from '../hooks/useDeezer';
@@ -144,66 +145,31 @@ export const HomePage: React.FC = () => {
               ))}
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {tracksToShow?.slice(0, 12).map((track, index) => (
+            <div className="space-y-2">
+              {tracksToShow?.slice(0, 10).map((track, index) => (
                 <motion.div
                   key={track.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.4, delay: index * 0.05 }}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.3, delay: index * 0.02 }}
                 >
-                  <GlassCard hover className="p-6 group">
-                    <div className="flex items-center space-x-4">
-                      <div className="relative">
-                        <div className="w-16 h-16 bg-gradient-to-br from-neon-purple to-neon-blue rounded-xl overflow-hidden">
-                          <img
-                            src={track.album.cover_medium}
-                            alt={track.title}
-                            className="w-full h-full object-cover"
-                            loading="lazy"
-                          />
-                        </div>
-                        <motion.button
-                          className="absolute inset-0 bg-black/50 rounded-xl flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                          whileHover={{ scale: 1.1 }}
-                          whileTap={{ scale: 0.9 }}
-                          onClick={() => handlePlayTrack(track)}
-                        >
-                          <Play className="w-6 h-6 text-white" />
-                        </motion.button>
-                      </div>
-
-                      <div className="flex-1 min-w-0">
-                        <h3 className="text-white font-inter font-semibold truncate">
-                          {track.title}
-                        </h3>
-                        <p className="text-gray-400 text-sm truncate">
-                          {track.artist.name}
-                        </p>
-                        <p className="text-gray-500 text-xs">
-                          {formatDuration(track.duration)}
-                        </p>
-                      </div>
-
-                      <div className="flex items-center space-x-2">
-                        <motion.button
-                          className="p-2 text-gray-400 hover:text-neon-pink transition-colors"
-                          whileHover={{ scale: 1.1 }}
-                          whileTap={{ scale: 0.9 }}
-                        >
-                          <Heart className="w-5 h-5" />
-                        </motion.button>
-                        <motion.button
-                          className="p-2 text-gray-400 hover:text-white transition-colors"
-                          whileHover={{ scale: 1.1 }}
-                          whileTap={{ scale: 0.9 }}
-                          onClick={() => handleAddToQueue(track)}
-                        >
-                          <MoreHorizontal className="w-5 h-5" />
-                        </motion.button>
-                      </div>
-                    </div>
-                  </GlassCard>
+                  <SongCard
+                    song={{
+                      id: track.id,
+                      title: track.title,
+                      artist: track.artist.name,
+                      album: track.album?.title,
+                      duration: track.duration,
+                      cover_url: track.album?.cover_xl || track.album?.cover_big || track.album?.cover_medium,
+                      audio_url: track.preview,
+                      plays_count: track.rank,
+                    }}
+                    variant="compact"
+                    showIndex
+                    index={index}
+                    onPlay={() => handlePlayTrack(track)}
+                    onAddToQueue={() => handleAddToQueue(track)}
+                  />
                 </motion.div>
               ))}
             </div>
@@ -223,7 +189,7 @@ export const HomePage: React.FC = () => {
                 <span className="text-white font-bold text-sm">AI</span>
               </div>
               <h2 className="text-2xl font-space font-bold text-white">
-                AI Recommendations
+                AI Powered Playlists
               </h2>
             </div>
             <NeonButton
@@ -231,37 +197,72 @@ export const HomePage: React.FC = () => {
               size="sm"
               onClick={() => setCurrentPage('ai-playlist')}
             >
-              Generate Playlist
+              Generate New Playlist
             </NeonButton>
           </div>
 
-          <GlassCard className="p-6 bg-gradient-to-r from-neon-purple/10 to-neon-blue/10 border border-neon-purple/20">
-            <div className="text-center">
-              <div className="w-16 h-16 bg-neon-gradient rounded-full flex items-center justify-center mx-auto mb-4">
-                <Music2 className="w-8 h-8 text-white" />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* AI Generator Card */}
+            <GlassCard className="p-6 bg-gradient-to-r from-neon-purple/10 to-neon-blue/10 border border-neon-purple/20">
+              <div className="text-center">
+                <div className="w-16 h-16 bg-neon-gradient rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Music2 className="w-8 h-8 text-white" />
+                </div>
+                <h3 className="text-xl font-space font-bold text-white mb-2">
+                  Create Your Perfect Playlist
+                </h3>
+                <p className="text-gray-300 mb-4">
+                  AI analyzes your taste and creates personalized playlists
+                </p>
+                <div className="flex flex-wrap gap-2 justify-center mb-6">
+                  {['Smart recommendations', 'Mood-aware', 'Time-appropriate', 'New discoveries'].map((feature) => (
+                    <span key={feature} className="px-3 py-1 bg-neon-purple/20 text-neon-purple rounded-full text-sm">
+                      {feature}
+                    </span>
+                  ))}
+                </div>
+                <NeonButton
+                  variant="primary"
+                  onClick={() => setCurrentPage('ai-playlist')}
+                  className="w-full"
+                >
+                  <span className="mr-2">✨</span>
+                  Generate AI Playlist
+                </NeonButton>
               </div>
-              <h3 className="text-xl font-space font-bold text-white mb-2">
-                Get Personalized Recommendations
+            </GlassCard>
+
+            {/* Quick AI Suggestions */}
+            <GlassCard className="p-6">
+              <h3 className="text-lg font-space font-bold text-white mb-4">
+                Quick AI Suggestions
               </h3>
-              <p className="text-gray-300 mb-4">
-                Our AI analyzes your music taste and creates the perfect playlist just for you
-              </p>
-              <div className="flex flex-wrap gap-2 justify-center mb-6">
-                {['Based on your genres', 'Mood-aware', 'Time-appropriate', 'New discoveries'].map((feature) => (
-                  <span key={feature} className="px-3 py-1 bg-neon-purple/20 text-neon-purple rounded-full text-sm">
-                    {feature}
-                  </span>
+              <div className="space-y-3">
+                {[
+                  { name: 'Discover Weekly', description: 'New tracks based on your taste', mood: 'discovery' },
+                  { name: 'Focus Flow', description: 'Concentration music for work', mood: 'focus' },
+                  { name: 'Energetic Vibes', description: 'High-energy tracks to pump you up', mood: 'energetic' },
+                  { name: 'Chill Sessions', description: 'Relaxing music for unwinding', mood: 'chill' }
+                ].map((suggestion, index) => (
+                  <motion.button
+                    key={suggestion.name}
+                    className="w-full text-left p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-colors"
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => setCurrentPage('ai-playlist')}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h4 className="text-white font-medium">{suggestion.name}</h4>
+                        <p className="text-gray-400 text-sm">{suggestion.description}</p>
+                      </div>
+                      <div className="w-2 h-2 bg-neon-gradient rounded-full"></div>
+                    </div>
+                  </motion.button>
                 ))}
               </div>
-              <NeonButton
-                variant="primary"
-                onClick={() => setCurrentPage('ai-playlist')}
-              >
-                <span className="mr-2">✨</span>
-                Create AI Playlist
-              </NeonButton>
-            </div>
-          </GlassCard>
+            </GlassCard>
+          </div>
         </motion.section>
 
         {/* User Preferences Section */}

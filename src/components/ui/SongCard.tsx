@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { usePlayerStore } from '../../stores/playerStore';
 import { GlassCard } from './GlassCard';
+import { AudioPreview } from './AudioPreview';
 
 interface SongCardProps {
   song: {
@@ -173,22 +174,14 @@ export const SongCard: React.FC<SongCardProps> = ({
               </span>
               
               {song.audio_url && (
-                <motion.button
-                  className="p-2 text-gray-400 hover:text-neon-purple transition-colors"
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.9 }}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    const audio = new Audio(song.audio_url);
-                    audio.volume = 0.3;
-                    audio.play().catch(() => {
-                      // Preview not available silently
-                    });
-                  }}
-                  title="Preview song"
-                >
-                  <Play className="w-4 h-4" />
-                </motion.button>
+                <div onClick={(e) => e.stopPropagation()}>
+                  <AudioPreview
+                    audioUrl={song.audio_url}
+                    trackTitle={`${song.title} by ${song.artist}`}
+                    variant="button"
+                    size="sm"
+                  />
+                </div>
               )}
               
               <motion.button
@@ -312,22 +305,14 @@ export const SongCard: React.FC<SongCardProps> = ({
 
           <div className="flex items-center space-x-1">
             {song.audio_url && (
-              <motion.button
-                className="p-2 text-gray-400 hover:text-neon-purple transition-colors"
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.9 }}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  const audio = new Audio(song.audio_url);
-                  audio.volume = 0.3;
-                  audio.play().catch(() => {
-                    // Preview not available silently
-                  });
-                }}
-                title="Preview song"
-              >
-                <Play className="w-4 h-4" />
-              </motion.button>
+              <div onClick={(e) => e.stopPropagation()}>
+                <AudioPreview
+                  audioUrl={song.audio_url}
+                  trackTitle={`${song.title} by ${song.artist}`}
+                  variant="button"
+                  size="sm"
+                />
+              </div>
             )}
 
             <motion.button

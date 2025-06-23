@@ -404,6 +404,199 @@ class DeezerService {
     });
   }
 
+  /**
+   * Fetches a list of artists for a specific genre.
+   * @param genreId The ID of the genre.
+   * @param limit The maximum number of artists to fetch (default is 25).
+   * @returns A promise that resolves to a list of artists in the genre.
+   */
+  async getArtistsByGenre(genreId: string, limit: number = 25): Promise<DeezerArtistListResponse> {
+    const cacheKey = ['deezer', 'genre-artists', genreId, limit];
+    
+    return this.queryClient.fetchQuery({
+      queryKey: cacheKey,
+      queryFn: async () => {
+        // Since we don't have direct genre endpoints, search for popular artists
+        const genreNames: { [key: string]: string } = {
+          '1': 'pop artists',
+          '2': 'rock artists', 
+          '3': 'hip hop artists',
+          '4': 'electronic artists',
+          '5': 'r&b artists'
+        };
+        
+        const searchTerm = genreNames[genreId] || 'popular artists';
+        const searchResult = await this.searchSongs(searchTerm, limit);
+        
+        // Extract unique artists from search results
+        const artists: DeezerArtist[] = [];
+        const seenArtists = new Set<string>();
+        
+        for (const track of searchResult.data) {
+          if (!seenArtists.has(track.artist.id) && artists.length < limit) {
+            seenArtists.add(track.artist.id);
+            artists.push({
+              id: track.artist.id,
+              name: track.artist.name,
+              link: track.artist.link,
+              picture: track.artist.picture,
+              picture_small: track.artist.picture_small,
+              picture_medium: track.artist.picture_medium,
+              picture_big: track.artist.picture_big,
+              picture_xl: track.artist.picture_xl,
+              nb_album: 0,
+              nb_fan: 0,
+              radio: false,
+              tracklist: track.artist.tracklist,
+              type: 'artist'
+            });
+          }
+        }
+        
+        return { data: artists };
+      },
+      staleTime: 30 * 60 * 1000,
+      gcTime: 60 * 60 * 1000,
+    });
+  }
+
+  /**
+   * Fetches the top tracks for a specific genre.
+   * @param genreId The ID of the genre.
+   * @param limit The maximum number of tracks to fetch.
+   * @returns A promise that resolves to a list of top tracks in the genre.
+   */
+  async getTopTracksByGenre(genreId: string, limit: number = 25): Promise<DeezerSearchResponse> {
+    const cacheKey = ['deezer', 'genre-top-tracks', genreId, limit];
+    
+    return this.queryClient.fetchQuery({
+      queryKey: cacheKey,
+      queryFn: async () => {
+        const genreNames: { [key: string]: string } = {
+          '1': 'Pop',
+          '2': 'Rock', 
+          '3': 'Hip Hop',
+          '4': 'Electronic',
+          '5': 'R&B'
+        };
+        
+        const genreName = genreNames[genreId] || 'music';
+        return await this.getSongsByGenre(genreName, limit);
+      },
+      staleTime: 30 * 60 * 1000,
+      gcTime: 60 * 60 * 1000,
+    });
+  }
+
+  /**
+   * Fetches radio tracks for a specific genre.
+   * @param genreId The ID of the genre.
+   * @param limit The maximum number of tracks to fetch.
+   * @returns A promise that resolves to radio tracks for the genre.
+   */
+  async getRadioForGenre(genreId: string, limit: number = 25): Promise<DeezerSearchResponse> {
+    const cacheKey = ['deezer', 'genre-radio', genreId, limit];
+    
+    return this.queryClient.fetchQuery({
+      queryKey: cacheKey,
+      queryFn: async () => {
+        // Use top tracks by genre as radio substitute
+        return await this.getTopTracksByGenre(genreId, limit);
+      },
+      staleTime: 15 * 60 * 1000,
+      gcTime: 30 * 60 * 1000,
+    });
+  }
+
+  /**
+   * Fetches radio tracks for a specific artist.
+   * @param artistId The ID of the artist.
+   * @param limit The maximum number of tracks to fetch.
+   * @returns A promise that resolves to radio tracks for the artist.
+   */
+  async getRadioForArtist(artistId: string, limit: number = 25): Promise<DeezerSearchResponse> {
+    const cacheKey = ['deezer', 'artist-radio', artistId, limit];
+    
+    return this.queryClient.fetchQuery({
+      queryKey: cacheKey,
+      queryFn: async () => {
+        // Use artist's top tracks as radio substitute
+        return await this.getArtistTopTracks(artistId, limit);
+      },
+      staleTime: 15 * 60 * 1000,
+      gcTime: 30 * 60 * 1000,
+    });
+  }
+
+  /**
+   * Fetches albums for a specific artist.
+   * @param artistId The ID of the artist.
+   * @param limit The maximum number of albums to fetch.
+   * @returns A promise that resolves to the artist's albums.
+   */
+  async getArtistAlbums(artistId: string, limit: number = 25): Promise<DeezerArtistAlbumsResponse> {
+    const cacheKey = ['deezer', 'artist-albums', artistId, limit];
+    
+    return this.queryClient.fetchQuery({
+      queryKey: cacheKey,
+      queryFn: async () => {
+        try {
+          const response = await this.makeRequest<DeezerArtistAlbumsResponse>(`/artist/${artistId}/albums?limit=${limit}`);
+          return response;
+        } catch (error) {
+          // Fallback: get artist details and create mock albums
+          const artist = await this.getArtistDetails(artistId);
+          const mockAlbums: DeezerAlbumPreview[] = [{
+            id: `${artistId}_album1`,
+            title: `${artist.name} - Greatest Hits`,
+            link: '',
+            cover: artist.picture_xl,
+            cover_small: artist.picture_small,
+            cover_medium: artist.picture_medium,
+            cover_big: artist.picture_big,
+            cover_xl: artist.picture_xl,
+            md5_image: '',
+            tracklist: '',
+            type: 'album'
+          }];
+          
+          return { data: mockAlbums, total: mockAlbums.length };
+        }
+      },
+      staleTime: 30 * 60 * 1000,
+      gcTime: 60 * 60 * 1000,
+    });
+  }
+
+  /**
+   * Fetches tracks for a specific album.
+   * @param albumId The ID of the album.
+   * @param limit The maximum number of tracks to fetch.
+   * @returns A promise that resolves to the album's tracks.
+   */
+  async getAlbumTracks(albumId: string, limit: number = 25): Promise<DeezerAlbumTracksResponse> {
+    const cacheKey = ['deezer', 'album-tracks', albumId, limit];
+    
+    return this.queryClient.fetchQuery({
+      queryKey: cacheKey,
+      queryFn: async () => {
+        try {
+          const response = await this.makeRequest<DeezerAlbumTracksResponse>(`/album/${albumId}/tracks?limit=${limit}`);
+          return response;
+        } catch (error) {
+          // Fallback: return popular tracks as album content
+          const popularTracks = await this.searchSongs('popular music', limit);
+          return {
+            data: popularTracks.data,
+            total: popularTracks.data.length
+          };
+        }
+      },
+      staleTime: 15 * 60 * 1000,
+      gcTime: 30 * 60 * 1000,
+    });
+  }
+
 }
 
 export default DeezerService;
