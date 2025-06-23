@@ -106,6 +106,7 @@ function AppContent() {
 
   // Show onboarding if user needs it
   if (isSignedIn && shouldShowOnboarding && !onboardingLoading) {
+    console.log('App: Showing onboarding', { isSignedIn, shouldShowOnboarding, onboardingLoading });
     return (
       <div className="min-h-screen bg-dark-600">
         <ParticleBackground />
@@ -114,6 +115,15 @@ function AppContent() {
       </div>
     );
   }
+  
+  // Debug logging for production
+  console.log('App state:', { 
+    isSignedIn, 
+    shouldShowOnboarding, 
+    onboardingLoading, 
+    isLoaded,
+    currentPage 
+  });
 
   const renderCurrentPage = () => {
     switch (currentPage) {
