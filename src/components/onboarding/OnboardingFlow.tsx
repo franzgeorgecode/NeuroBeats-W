@@ -71,15 +71,22 @@ export const OnboardingFlow: React.FC = () => {
           publicMetadata: {
             ...user.publicMetadata,
             onboardingCompleted: true,
-            favoriteGenres: [],
-            selectedSongs: [],
+            favoriteGenres: selectedGenres.length > 0 ? selectedGenres : ['Pop', 'Rock'], // Use selected or defaults
+            selectedSongs: selectedSongs.length > 0 ? selectedSongs : [], // Use selected or empty
+            skippedAt: new Date().toISOString(),
           }
         });
       }
-      showToast('Onboarding skipped. You can update preferences later.', 'info');
+      
+      showToast('Setup completed! You can update preferences anytime from your profile.', 'success');
+      
+      // Redirect to dashboard after brief delay
+      setTimeout(() => {
+        window.location.reload();
+      }, 1500);
     } catch (error) {
       console.error('Error skipping onboarding:', error);
-      showToast('Error skipping onboarding', 'error');
+      showToast('Error completing setup', 'error');
     } finally {
       setIsLoading(false);
       setShowSkipConfirmation(false);
@@ -101,13 +108,9 @@ export const OnboardingFlow: React.FC = () => {
         });
       }
       
-      setCurrentStep(3); // Move to complete screen
+      // Move to step 4 (complete screen) instead of redirecting immediately
+      setCurrentStep(3);
       showToast('Welcome to NeuroBeats! Your preferences have been saved.', 'success');
-      
-      // Redirect to dashboard after a brief delay
-      setTimeout(() => {
-        window.location.reload(); // Force refresh to update onboarding status
-      }, 2000);
     } catch (error) {
       console.error('Error saving preferences:', error);
       showToast('Error saving preferences', 'error');

@@ -172,6 +172,25 @@ export const SongCard: React.FC<SongCardProps> = ({
                 {formatDuration(song.duration)}
               </span>
               
+              {song.audio_url && (
+                <motion.button
+                  className="p-2 text-gray-400 hover:text-neon-purple transition-colors"
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    const audio = new Audio(song.audio_url);
+                    audio.volume = 0.3;
+                    audio.play().catch(() => {
+                      // Preview not available silently
+                    });
+                  }}
+                  title="Preview song"
+                >
+                  <Play className="w-4 h-4" />
+                </motion.button>
+              )}
+              
               <motion.button
                 className={`p-2 transition-colors ${
                   isLiked ? 'text-neon-pink' : 'text-gray-400 hover:text-neon-pink'
@@ -179,6 +198,7 @@ export const SongCard: React.FC<SongCardProps> = ({
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9 }}
                 onClick={handleLike}
+                title="Like"
               >
                 <Heart className={`w-4 h-4 ${isLiked ? 'fill-current' : ''}`} />
               </motion.button>
@@ -188,6 +208,7 @@ export const SongCard: React.FC<SongCardProps> = ({
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9 }}
                 onClick={handleAddToQueue}
+                title="Add to queue"
               >
                 <Plus className="w-4 h-4" />
               </motion.button>
@@ -290,6 +311,25 @@ export const SongCard: React.FC<SongCardProps> = ({
           </div>
 
           <div className="flex items-center space-x-1">
+            {song.audio_url && (
+              <motion.button
+                className="p-2 text-gray-400 hover:text-neon-purple transition-colors"
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  const audio = new Audio(song.audio_url);
+                  audio.volume = 0.3;
+                  audio.play().catch(() => {
+                    // Preview not available silently
+                  });
+                }}
+                title="Preview song"
+              >
+                <Play className="w-4 h-4" />
+              </motion.button>
+            )}
+
             <motion.button
               className={`p-2 transition-colors ${
                 isLiked ? 'text-neon-pink' : 'text-gray-400 hover:text-neon-pink'
@@ -297,6 +337,7 @@ export const SongCard: React.FC<SongCardProps> = ({
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.9 }}
               onClick={handleLike}
+              title="Like"
             >
               <Heart className={`w-4 h-4 ${isLiked ? 'fill-current' : ''}`} />
             </motion.button>
@@ -305,8 +346,10 @@ export const SongCard: React.FC<SongCardProps> = ({
               className="p-2 text-gray-400 hover:text-white transition-colors"
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.9 }}
+              onClick={handleAddToQueue}
+              title="Add to queue"
             >
-              <MoreHorizontal className="w-4 h-4" />
+              <Plus className="w-4 h-4" />
             </motion.button>
           </div>
         </div>

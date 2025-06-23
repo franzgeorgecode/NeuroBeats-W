@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Play, Heart, MoreHorizontal, TrendingUp, Music2, Headphones } from 'lucide-react';
+import { Play, Heart, MoreHorizontal, TrendingUp, Music2, Headphones, Settings } from 'lucide-react';
 import { GlassCard } from '../components/ui/GlassCard';
 import { NeonButton } from '../components/ui/NeonButton';
+import { PreferencesCard } from '../components/user/PreferencesCard';
 import { useDeezer } from '../hooks/useDeezer';
 import { usePlayerStore } from '../stores/playerStore';
 import { useAppStore } from '../stores/appStore';
@@ -263,11 +264,27 @@ export const HomePage: React.FC = () => {
           </GlassCard>
         </motion.section>
 
+        {/* User Preferences Section */}
+        <motion.section
+          className="mb-12"
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.5 }}
+        >
+          <div className="flex items-center mb-6">
+            <Settings className="w-6 h-6 text-neon-purple mr-3" />
+            <h2 className="text-2xl font-space font-bold text-white">
+              Your Profile
+            </h2>
+          </div>
+          <PreferencesCard />
+        </motion.section>
+
         {/* Quick Actions */}
         <motion.section
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.5 }}
+          transition={{ duration: 0.6, delay: 0.6 }}
         >
           <h2 className="text-2xl font-space font-bold text-white mb-6">
             Quick Actions
@@ -283,7 +300,7 @@ export const HomePage: React.FC = () => {
                 key={action.label}
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.4, delay: 0.6 + index * 0.1 }}
+                transition={{ duration: 0.4, delay: 0.7 + index * 0.1 }}
               >
                 <GlassCard 
                   hover 
