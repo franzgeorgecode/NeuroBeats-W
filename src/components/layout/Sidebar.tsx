@@ -11,7 +11,12 @@ import {
   TrendingUp,
   User,
   Compass,
-  Sparkles
+  Sparkles,
+  Rocket,
+  Brain,
+  Trophy,
+  Users,
+  Activity
 } from 'lucide-react';
 import { useAppStore } from '../../stores/appStore';
 import { useAuth } from '../../hooks/useAuth';
@@ -34,6 +39,15 @@ export const Sidebar: React.FC = () => {
 
   const aiMenuItems = [
     { id: 'ai-playlist', label: 'AI Playlist Generator', icon: Sparkles },
+  ];
+
+  const innovationMenuItems = [
+    { id: 'innovation-hub', label: 'Innovation Hub', icon: Rocket },
+    { id: 'ai-composer', label: 'AI Composer', icon: Brain },
+    { id: '3d-visualizer', label: '3D Visualizer', icon: Activity },
+    { id: 'emotional-ai', label: 'Emotional AI', icon: Heart },
+    { id: 'live-sessions', label: 'Live Sessions', icon: Users },
+    { id: 'achievements', label: 'Achievements', icon: Trophy },
   ];
 
   const userMenuItems = [
@@ -139,6 +153,58 @@ export const Sidebar: React.FC = () => {
                   key={item.id}
                   className={`
                     w-full flex items-center p-3 rounded-xl transition-all duration-200
+                    ${isActive 
+                      ? 'bg-neon-gradient text-white shadow-neon' 
+                      : 'text-gray-300 hover:text-white hover:bg-white/10'
+                    }
+                  `}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => setCurrentPage(item.id)}
+                  style={{ justifyContent: sidebarCollapsed ? 'center' : 'flex-start' }}
+                >
+                  <Icon className="w-6 h-6" />
+                  <AnimatePresence>
+                    {!sidebarCollapsed && (
+                      <motion.span
+                        className="ml-3 font-inter font-medium"
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: -10 }}
+                      >
+                        {item.label}
+                      </motion.span>
+                    )}
+                  </AnimatePresence>
+                </motion.button>
+              );
+            })}
+          </div>
+
+          {/* Innovation Hub Section */}
+          <div className="border-t border-white/10 pt-4 mb-8">
+            <AnimatePresence>
+              {!sidebarCollapsed && (
+                <motion.h3
+                  className="text-gray-400 text-xs font-semibold uppercase tracking-wider mb-3 px-3"
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -10 }}
+                >
+                  🚀 Innovation Hub
+                </motion.h3>
+              )}
+            </AnimatePresence>
+            
+            {innovationMenuItems.map((item) => {
+              const Icon = item.icon;
+              const isActive = currentPage === item.id;
+
+              return (
+                <motion.button
+                  key={item.id}
+                  className={`
+                    w-full flex items-center p-3 rounded-xl transition-all duration-200 mb-1
                     ${isActive 
                       ? 'bg-neon-gradient text-white shadow-neon' 
                       : 'text-gray-300 hover:text-white hover:bg-white/10'

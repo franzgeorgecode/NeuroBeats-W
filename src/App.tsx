@@ -27,6 +27,7 @@ import { LikedSongsPage } from './pages/LikedSongsPage';
 import { ArtistPage } from './pages/ArtistPage';
 import { AlbumPage } from './pages/AlbumPage';
 import { UserProfile } from './components/auth/UserProfile';
+import { InnovationHub } from './pages/InnovationHub';
 import { useAppStore } from './stores/appStore';
 import { useOnboarding } from './hooks/useOnboarding';
 import { useSettingsStore } from './stores/settingsStore';
@@ -149,6 +150,18 @@ function AppContent() {
         return <RadioPage />;
       case 'profile':
         return <UserProfile />;
+      case 'innovation-hub':
+        return <InnovationHub />;
+      case 'ai-composer':
+        return <InnovationHub />;
+      case '3d-visualizer':
+        return <InnovationHub />;
+      case 'emotional-ai':
+        return <InnovationHub />;
+      case 'live-sessions':
+        return <InnovationHub />;
+      case 'achievements':
+        return <InnovationHub />;
       default:
         return <HomePage />;
     }
