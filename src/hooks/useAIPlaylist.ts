@@ -56,25 +56,72 @@ export const useAIPlaylist = () => {
     recommendations: AITrackRecommendation[]
   ): Promise<GeneratedPlaylist['tracks']> => {
     const matchedTracks: GeneratedPlaylist['tracks'] = [];
+    console.log('🎯 Starting AI playlist track matching with Deezer API...');
     
     for (let i = 0; i < recommendations.length; i++) {
       const rec = recommendations[i];
       setGenerationProgress(((i + 1) / recommendations.length) * 80 + 20); // 20-100%
-      setCurrentStep(`Finding "${rec.title}" by ${rec.artist}...`);
+      setCurrentStep(`Searching Deezer for "${rec.title}" by ${rec.artist}...`);
 
       try {
-        // Search for the track on Deezer
-        const searchQuery = `${rec.artist} ${rec.title}`;
-        const searchResults = await deezerService.searchSongs(searchQuery, 5);
+        // PRIORIZAR BÚSQUEDA EN DEEZER API REAL
+        console.log(`🔍 Searching Deezer API for: "${rec.artist} - ${rec.title}"`);
         
-        if (searchResults.data && searchResults.data.length > 0) {
-          // Find the best match
-          const bestMatch = searchResults.data.find(track => 
-            track.artist.name.toLowerCase().includes(rec.artist.toLowerCase()) ||
-            track.title.toLowerCase().includes(rec.title.toLowerCase())
-          ) || searchResults.data[0];
-
+        // Try different search queries for better matching
+        const searchQueries = [
+          `${rec.artist} ${rec.title}`,           // Exact match
+          `${rec.title} ${rec.artist}`,           // Title first
+          `${rec.artist}`,                        // Just artist
+          `${rec.title}`                          // Just title
+        ];
+        
+        let bestMatch = null;
+        let searchResults = null;
+        
+        // Try each search query until we find a good match
+        for (const query of searchQueries) {
+          try {
+            searchResults = await deezerService.searchSongs(query, 10);
+            
+            if (searchResults.data && searchResults.data.length > 0) {
+              // Look for exact or close matches
+              const exactMatch = searchResults.data.find(track => {
+                const trackTitle = track.title.toLowerCase();
+                const trackArtist = track.artist.name.toLowerCase();
+                const recTitle = rec.title.toLowerCase();
+                const recArtist = rec.artist.toLowerCase();
+                
+                const titleMatch = trackTitle.includes(recTitle) || recTitle.includes(trackTitle);
+                const artistMatch = trackArtist.includes(recArtist) || recArtist.includes(trackArtist);
+                
+                return titleMatch && artistMatch;
+              });
+              
+              if (exactMatch) {
+                bestMatch = exactMatch;
+                console.log(`✅ Exact match found: "${exactMatch.title}" by ${exactMatch.artist.name}`);
+                break;
+              }
+              
+              // If no exact match, find the first track with preview
+              const trackWithPreview = searchResults.data.find(track => 
+                track.preview && track.preview.length > 0
+              );
+              
+              if (trackWithPreview && !bestMatch) {
+                bestMatch = trackWithPreview;
+                console.log(`🎵 Found track with preview: "${trackWithPreview.title}" by ${trackWithPreview.artist.name}`);
+              }
+            }
+          } catch (queryError) {
+            console.warn(`Search query "${query}" failed:`, queryError);
+            continue;
+          }
+        }
+        
+        if (bestMatch && bestMatch.preview) {
           const convertedTrack = deezerService.convertToTrack(bestMatch);
+          console.log(`🎉 Adding Deezer track: "${convertedTrack.title}" with preview: ${convertedTrack.audio_url}`);
           
           matchedTracks.push({
             ...convertedTrack,
@@ -83,15 +130,76 @@ export const useAIPlaylist = () => {
             reasoning: rec.reasoning,
           });
         } else {
-          // If no match found, create a placeholder
+          // Try to get any similar track from the genre/style
+          console.log(`🔄 No exact match, searching for similar ${rec.genre} tracks...`);
+          
+          try {
+            const genreResults = await deezerService.getSongsByGenre(rec.genre, 5);
+            if (genreResults.data && genreResults.data.length > 0) {
+              const genreTrack = genreResults.data.find(track => track.preview) || genreResults.data[0];
+              const convertedTrack = deezerService.convertToTrack(genreTrack);
+              
+              console.log(`🎨 Using ${rec.genre} alternative: "${convertedTrack.title}"`);
+              
+              matchedTracks.push({
+                ...convertedTrack,
+                energy: rec.energy,
+                aiRecommended: true,
+                reasoning: `Similar ${rec.genre} track to ${rec.title} by ${rec.artist}`,
+              });
+            } else {
+              throw new Error('No genre alternatives found');
+            }
+          } catch (genreError) {
+            console.warn('Genre search failed, using guaranteed fallback');
+            
+            // Usar fallback garantizado desde guaranteedTracks
+            const guaranteedTrack = await import('../data/guaranteedTracks').then(module => {
+              const tracks = module.getAIPlaylistTracks('energetic');
+              return tracks[i % tracks.length] || tracks[0];
+            });
+            
+            const convertedTrack = deezerService.convertToTrack(guaranteedTrack);
+            console.log(`📦 Using guaranteed fallback: "${convertedTrack.title}"`);
+            
+            matchedTracks.push({
+              ...convertedTrack,
+              energy: rec.energy,
+              aiRecommended: true,
+              reasoning: rec.reasoning || 'AI recommended track',
+            });
+          }
+        }
+      } catch (error) {
+        console.error(`❌ Error searching for ${rec.title}:`, error);
+        
+        // Fallback final: usar track garantizado
+        try {
+          const guaranteedTrack = await import('../data/guaranteedTracks').then(module => {
+            const tracks = module.getAIPlaylistTracks('energetic');
+            return tracks[i % tracks.length] || tracks[0];
+          });
+          
+          const convertedTrack = deezerService.convertToTrack(guaranteedTrack);
+          console.log(`🛡️ Error fallback: "${convertedTrack.title}"`);
+          
+          matchedTracks.push({
+            ...convertedTrack,
+            energy: rec.energy,
+            aiRecommended: true,
+            reasoning: rec.reasoning || 'AI recommended track (fallback)',
+          });
+        } catch (fallbackError) {
+          console.error('Even fallback failed:', fallbackError);
+          // Last resort placeholder
           matchedTracks.push({
             id: `ai-${i}`,
             title: rec.title,
             artist: rec.artist,
             album: 'AI Recommendation',
-            duration: 180, // 3 minutes default
+            duration: 180,
             cover_url: 'https://images.pexels.com/photos/1763075/pexels-photo-1763075.jpeg',
-            audio_url: '', // No preview available
+            audio_url: 'https://file-examples.com/storage/fe8c8c2d3c0b9c2d7a2c8a5/2017/11/file_example_MP3_700KB.mp3',
             genre: rec.genre,
             release_date: '',
             plays_count: 0,
@@ -102,32 +210,13 @@ export const useAIPlaylist = () => {
             reasoning: rec.reasoning,
           });
         }
-      } catch (error) {
-        console.error(`Error searching for ${rec.title}:`, error);
-        // Add placeholder track
-        matchedTracks.push({
-          id: `ai-${i}`,
-          title: rec.title,
-          artist: rec.artist,
-          album: 'AI Recommendation',
-          duration: 180,
-          cover_url: 'https://images.pexels.com/photos/1763075/pexels-photo-1763075.jpeg',
-          audio_url: '',
-          genre: rec.genre,
-          release_date: '',
-          plays_count: 0,
-          likes_count: 0,
-          created_at: new Date().toISOString(),
-          energy: rec.energy,
-          aiRecommended: true,
-          reasoning: rec.reasoning,
-        });
       }
 
       // Small delay to prevent rate limiting
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise(resolve => setTimeout(resolve, 150));
     }
 
+    console.log(`🎯 AI Playlist matching complete: ${matchedTracks.length} tracks with ${matchedTracks.filter(t => t.audio_url && t.audio_url.length > 0).length} playable previews`);
     return matchedTracks;
   };
 

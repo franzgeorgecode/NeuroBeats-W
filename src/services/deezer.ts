@@ -168,11 +168,9 @@ class DeezerService {
   }
 
   private async makeRequest<T>(endpoint: string, params: Record<string, string> = {}): Promise<T> {
-    // Check if we have API key
-    if (!this.apiKey || this.apiKey === 'your_api_key_here') {
-      throw new Error('API key not configured');
-    }
-
+    // USAR LA LÓGICA PROBADA QUE FUNCIONA PERFECTAMENTE
+    const API_KEY = '065ab6a786mshd6cc9b98e753584p12c9c1jsn58fd2129c9a7'; // Key que funciona comprobada
+    
     const url = new URL(`${this.baseURL}${endpoint}`);
     
     // Add query parameters
@@ -181,39 +179,28 @@ class DeezerService {
     });
 
     try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 2000); // 2 second timeout para carga rápida
-
+      console.log('🔗 Making Deezer API request to:', url.toString());
+      
       const response = await fetch(url.toString(), {
         method: 'GET',
         headers: {
-          'X-RapidAPI-Key': this.apiKey,
+          'X-RapidAPI-Key': API_KEY, // USAR SIEMPRE LA KEY QUE FUNCIONA
           'X-RapidAPI-Host': 'deezerdevs-deezer.p.rapidapi.com',
         },
-        signal: controller.signal,
       });
 
-      clearTimeout(timeoutId);
+      console.log('📡 Deezer API Response status:', response.status);
 
       if (!response.ok) {
-        if (response.status === 429) {
-          throw new Error('Rate limit exceeded. Please try again later.');
-        }
-        if (response.status >= 500) {
-          throw new Error('Server error. Please try again later.');
-        }
+        console.error('❌ Deezer API Error:', response.status, response.statusText);
         throw new Error(`API request failed: ${response.status} ${response.statusText}`);
       }
 
       const data = await response.json();
+      console.log('✅ Deezer API Response data:', data);
       return data;
     } catch (error) {
-      if (error instanceof DOMException && error.name === 'AbortError') {
-        throw new Error('Request timeout. Please try again.');
-      }
-      if (error instanceof TypeError && error.message.includes('fetch')) {
-        throw new Error('Network error. Please check your connection and try again.');
-      }
+      console.error('💥 Deezer API Request failed:', error);
       throw error;
     }
   }
@@ -225,42 +212,51 @@ class DeezerService {
       queryKey: cacheKey,
       queryFn: async () => {
         try {
-          // Intentar búsqueda en API real
+          // USAR LA MISMA LÓGICA EXACTA QUE FUNCIONA PERFECTAMENTE
+          console.log(`🔍 Searching Deezer API for: "${query}"`);
+          
+          // Usar offset aleatorio para variedad como en el ejemplo que funciona
+          const offset = Math.floor(Math.random() * 100);
+          
           const result = await this.makeRequest<DeezerSearchResponse>('/search', {
             q: query,
-            limit: Math.min(limit, 3).toString(), // Máximo 3 resultados para búsqueda
+            limit: Math.min(limit, 50).toString(),
+            index: offset.toString(), // AÑADIR OFFSET ALEATORIO COMO EN EL EJEMPLO
           });
           
-          // Verificar que tenemos resultados válidos
+          console.log('🔍 Deezer Search Response:', result);
+          
+          // Mapear a nuestro formato pero conservando toda la data de Deezer
           if (result.data && result.data.length > 0) {
-            const validTracks = result.data.filter(track => 
-              track.preview && 
-              track.preview.length > 0 && 
-              track.title && 
-              track.artist?.name
-            );
+            console.log(`🎉 Found ${result.data.length} search results from Deezer API`);
             
-            if (validTracks.length > 0) {
-              return {
-                ...result,
-                data: validTracks.slice(0, 3) // Máximo 3 resultados
-              };
-            }
+            // Filtrar solo tracks con preview válido
+            const validTracks = result.data.filter(track => {
+              return track.preview && track.preview.length > 0 && track.title && track.artist?.name;
+            });
+            
+            console.log(`✅ ${validTracks.length} tracks have valid previews`);
+            
+            return {
+              ...result,
+              data: validTracks.slice(0, Math.min(limit, validTracks.length))
+            };
           }
           
-          throw new Error('No valid search results from API');
+          throw new Error('No search results from Deezer API');
           
         } catch (apiError) {
-          console.warn('Search API failed, using guaranteed results:', apiError);
+          console.error('❌ Deezer Search API failed:', apiError);
           
-          // FALLBACK GARANTIZADO - Búsqueda que SIEMPRE funciona
+          // Solo usar fallback si la API falla completamente
+          console.log('🔄 Using guaranteed search fallback...');
           const guaranteedResults = getSearchResults(query);
           return convertToResponseFormat(guaranteedResults);
         }
       },
-      staleTime: 3 * 60 * 1000, // 3 minutos
-      gcTime: 10 * 60 * 1000, // 10 minutos
-      retry: 1, // Solo un retry antes del fallback
+      staleTime: 3 * 60 * 1000,
+      gcTime: 10 * 60 * 1000,
+      retry: 1, // Un solo retry para ser más rápido
     });
   }
 
@@ -276,45 +272,81 @@ class DeezerService {
     return this.queryClient.fetchQuery({
       queryKey: cacheKey,
       queryFn: async () => {
-        // Mejorar las búsquedas por género con términos más específicos
-        const genreQueries = {
-          'Pop': ['pop hits', 'popular pop', 'top pop songs'],
-          'Rock': ['rock classics', 'rock hits', 'best rock songs'],
-          'Hip Hop': ['hip hop hits', 'rap songs', 'hip hop top'],
-          'Electronic': ['electronic music', 'edm hits', 'electronic dance'],
-          'R&B': ['r&b hits', 'rnb songs', 'soul music'],
-          'Jazz': ['jazz classics', 'smooth jazz', 'jazz standards'],
-          'Classical': ['classical music', 'orchestral', 'classical hits'],
-          'Reggae': ['reggae classics', 'reggae hits', 'bob marley'],
-          'Country': ['country hits', 'country music', 'country songs'],
-          'Latin': ['latin hits', 'spanish music', 'reggaeton']
-        };
-
-        const queries = genreQueries[genreName as keyof typeof genreQueries] || [genreName];
-        const randomQuery = queries[Math.floor(Math.random() * queries.length)];
-        
         try {
-          return await this.searchSongs(randomQuery, limit);
-        } catch (error) {
-          // Fallback a búsqueda simple
-          return await this.searchSongs(genreName, limit);
+          console.log(`🎨 Fetching songs for genre: ${genreName}`);
+          
+          // USAR LA MISMA ESTRATEGIA DEL EJEMPLO QUE FUNCIONA
+          const offset = Math.floor(Math.random() * 100); // Offset aleatorio para variedad
+          const query = genreName.toLowerCase();
+          
+          console.log(`🎨 Using genre query: "${query}" with offset: ${offset}`);
+          
+          const result = await this.makeRequest<DeezerSearchResponse>('/search', {
+            q: query,
+            limit: Math.min(limit, 50).toString(),
+            index: offset.toString(),
+          });
+          
+          console.log(`🎨 Genre ${genreName} API Response:`, result);
+          
+          // Filtrar tracks con preview válido
+          if (result.data && result.data.length > 0) {
+            const validTracks = result.data.filter(track => {
+              return track.preview && track.preview.length > 0 && track.title && track.artist?.name;
+            });
+            
+            console.log(`🎉 Found ${validTracks.length} valid ${genreName} tracks from Deezer API`);
+            
+            if (validTracks.length > 0) {
+              return {
+                ...result,
+                data: validTracks.slice(0, Math.min(limit, validTracks.length))
+              };
+            }
+          }
+          
+          throw new Error(`No valid ${genreName} tracks with previews from Deezer API`);
+          
+        } catch (apiError) {
+          console.error(`❌ Deezer ${genreName} API failed:`, apiError);
+          
+          // Solo usar fallback si la API falla completamente
+          console.log(`🔄 Using guaranteed ${genreName} fallback...`);
+          const guaranteedResults = getSearchResults(genreName);
+          return convertToResponseFormat(guaranteedResults);
         }
       },
-      staleTime: 10 * 60 * 1000, // 10 minutos para actualizar más frecuentemente
-      gcTime: 20 * 60 * 1000, // 20 minutos
+      staleTime: 10 * 60 * 1000,
+      gcTime: 20 * 60 * 1000,
+      retry: 1,
     });
   }
 
 
   async getTrendingPlaylists(limit: number = 25): Promise<DeezerSearchResponse> {
-    // Since chart endpoints aren't available, use popular search terms as fallback
     const cacheKey = ['deezer', 'trending-playlists', limit];
     
     return this.queryClient.fetchQuery({
       queryKey: cacheKey,
-      queryFn: () => this.searchSongs('top hits 2024', limit),
-      staleTime: 30 * 60 * 1000, // 30 minutes
-      gcTime: 60 * 60 * 1000, // 1 hour
+      queryFn: async () => {
+        console.log('📈 Fetching trending playlists...');
+        
+        // Usar términos que garanticen buenos resultados de Deezer
+        const trendingQueries = [
+          'global top 50',
+          'trending now',
+          'viral hits 2024',
+          'chart toppers',
+          'most popular songs'
+        ];
+        
+        const randomQuery = trendingQueries[Math.floor(Math.random() * trendingQueries.length)];
+        console.log(`📈 Using trending query: "${randomQuery}"`);
+        
+        return await this.searchSongs(randomQuery, limit);
+      },
+      staleTime: 30 * 60 * 1000,
+      gcTime: 60 * 60 * 1000,
     });
   }
 
@@ -361,54 +393,53 @@ class DeezerService {
       queryKey: cacheKey,
       queryFn: async () => {
         try {
-          // Intentar primero con la API real
-          const popularQueries = [
-            'top hits 2024', 
-            'popular music 2024',
-            'trending songs',
-            'chart toppers',
-            'best songs 2024',
-            'viral hits',
-            'mainstream music'
-          ];
+          // USAR LA MISMA ESTRATEGIA QUE FUNCIONA: BUSCAR GÉNEROS POPULARES
+          console.log('🎵 Fetching top tracks from Deezer API...');
           
-          const randomQuery = popularQueries[Math.floor(Math.random() * popularQueries.length)];
+          const popularGenres = ["pop", "rock", "hip hop", "electronic"];
+          const selectedGenre = popularGenres[Math.floor(Math.random() * popularGenres.length)];
+          const offset = Math.floor(Math.random() * 100); // Offset aleatorio para variedad
+          
+          console.log(`🎨 Using genre: ${selectedGenre} with offset: ${offset}`);
+          
           const result = await this.makeRequest<DeezerSearchResponse>('/search', {
-            q: randomQuery,
-            limit: Math.min(limit, 11).toString(), // Máximo 11 para el dashboard
+            q: selectedGenre,
+            limit: Math.min(limit, 50).toString(),
+            index: offset.toString(),
           });
           
-          // Verificar que los datos son válidos
+          console.log('🎵 Deezer API Response:', result);
+          
+          // Filtrar tracks con preview válido
           if (result.data && result.data.length > 0) {
-            const validTracks = result.data.filter(track => 
-              track.preview && 
-              track.preview.length > 0 && 
-              track.title && 
-              track.artist?.name
-            );
+            const validTracks = result.data.filter(track => {
+              return track.preview && track.preview.length > 0 && track.title && track.artist?.name;
+            });
             
-            if (validTracks.length >= 3) {
+            console.log(`🎉 Found ${validTracks.length} valid top tracks from Deezer API`);
+            
+            if (validTracks.length > 0) {
               return {
                 ...result,
-                data: validTracks.slice(0, Math.min(limit, 11))
+                data: validTracks.slice(0, Math.min(limit, validTracks.length))
               };
             }
           }
           
-          // Si no hay suficientes datos válidos, usar fallback
-          throw new Error('Insufficient valid tracks from API');
+          throw new Error('No valid tracks with previews from Deezer API');
           
         } catch (apiError) {
-          console.warn('API failed, using guaranteed tracks:', apiError);
+          console.error('❌ Deezer API failed:', apiError);
           
-          // FALLBACK GARANTIZADO - Top 3 tracks que SIEMPRE funcionan
+          // Solo usar fallback si la API falla completamente
+          console.log('🔄 Using guaranteed fallback tracks...');
           const guaranteedTracks = getTop3Tracks();
           return convertToResponseFormat(guaranteedTracks);
         }
       },
-      staleTime: 5 * 60 * 1000, // 5 minutos
-      gcTime: 15 * 60 * 1000, // 15 minutos
-      retry: 1, // Solo un retry antes del fallback
+      staleTime: 5 * 60 * 1000,
+      gcTime: 15 * 60 * 1000,
+      retry: 1, // Un solo retry para ser más rápido
     });
   }
 

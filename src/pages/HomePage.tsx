@@ -78,25 +78,33 @@ export const HomePage: React.FC = () => {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  // Determinar qué datos usar - SISTEMA GARANTIZADO
+  // SISTEMA PRIORIZADO: API REAL PRIMERO, FALLBACK SOLO SI FALLA
   let tracksToShow = [];
   let isLoadingState = false;
+  let dataSource = '';
   
-  // PRIORIDAD 1: Tracks garantizados (siempre disponibles)
-  if (guaranteedTracks.length > 0) {
-    tracksToShow = guaranteedTracks;
-  }
-  // PRIORIDAD 2: Datos de la API si están disponibles
-  else if (topTracksData?.data && topTracksData.data.length > 0) {
+  // PRIORIDAD 1: Datos de la API de Deezer (SIEMPRE PRIMERO)
+  if (topTracksData?.data && topTracksData.data.length > 0) {
     tracksToShow = topTracksData.data;
+    dataSource = 'Deezer API';
+    console.log('🎵 Using Deezer API data:', tracksToShow.length, 'tracks');
   }
-  // PRIORIDAD 3: Fallback si hay error
+  // PRIORIDAD 2: Tracks garantizados si API falla
+  else if (guaranteedTracks.length > 0 && !isLoading) {
+    tracksToShow = guaranteedTracks;
+    dataSource = 'Guaranteed';
+    console.log('🔄 Using guaranteed fallback:', tracksToShow.length, 'tracks');
+  }
+  // PRIORIDAD 3: Fallback adicional si hay error
   else if (fallbackTracks.length > 0) {
     tracksToShow = fallbackTracks;
+    dataSource = 'Mock Data';
+    console.log('📦 Using mock fallback:', tracksToShow.length, 'tracks');
   }
-  // ESTADO DE CARGA: Solo si estamos esperando datos y no tenemos garantizados
-  else if (isLoading && guaranteedTracks.length === 0) {
+  // ESTADO DE CARGA: Solo mientras esperamos la API
+  else if (isLoading) {
     isLoadingState = true;
+    console.log('⏳ Loading from Deezer API...');
   }
   
   const hasValidTracks = tracksToShow && tracksToShow.length > 0;
@@ -154,8 +162,12 @@ export const HomePage: React.FC = () => {
             <h2 className="text-2xl font-space font-bold text-white">
               Top 3 Tracks
             </h2>
-            <span className="ml-3 text-xs bg-green-500/20 text-green-400 px-2 py-1 rounded-full">
-              {guaranteedTracks.length > 0 ? 'Guaranteed' : 'Live'}
+            <span className={`ml-3 text-xs px-2 py-1 rounded-full ${
+              dataSource === 'Deezer API' ? 'bg-green-500/20 text-green-400' :
+              dataSource === 'Guaranteed' ? 'bg-blue-500/20 text-blue-400' :
+              'bg-yellow-500/20 text-yellow-400'
+            }`}>
+              {dataSource || 'Loading...'}
             </span>
           </div>
 
