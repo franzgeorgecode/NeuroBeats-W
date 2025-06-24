@@ -81,13 +81,19 @@ export const SongCard: React.FC<SongCardProps> = ({
         album: song.album || '',
         duration: song.duration,
         cover_url: song.cover_url,
-        audio_url: song.audio_url,
+        audio_url: song.audio_url || '', // Asegurar que siempre hay una URL
         genre: '',
         release_date: '',
         plays_count: song.plays_count || 0,
         likes_count: 0,
         created_at: new Date().toISOString(),
+        artistId: song.artistId,
+        albumId: song.albumId,
       };
+      
+      // Debug log para verificar que el audio_url está presente
+      console.log('Playing track:', track.title, 'Audio URL:', track.audio_url);
+      
       setCurrentTrack(track);
       setIsPlaying(true);
     }

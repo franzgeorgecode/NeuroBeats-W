@@ -182,7 +182,7 @@ class DeezerService {
 
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+      const timeoutId = setTimeout(() => controller.abort(), 2000); // 2 second timeout para carga rápida
 
       const response = await fetch(url.toString(), {
         method: 'GET',

@@ -33,7 +33,7 @@ import { useToast } from '../hooks/useToast';
 
 const GENRES = [
   { 
-    id: '132', 
+    id: '1', 
     name: 'Pop', 
     icon: Star, 
     color: 'from-pink-500 to-rose-500', 
@@ -41,7 +41,7 @@ const GENRES = [
     image: 'https://images.pexels.com/photos/1763075/pexels-photo-1763075.jpeg'
   },
   { 
-    id: '152', 
+    id: '2', 
     name: 'Rock', 
     icon: Guitar, 
     color: 'from-red-500 to-orange-500', 
@@ -49,7 +49,7 @@ const GENRES = [
     image: 'https://images.pexels.com/photos/1190297/pexels-photo-1190297.jpeg'
   },
   { 
-    id: '116', 
+    id: '3', 
     name: 'Hip Hop', 
     icon: Mic, 
     color: 'from-purple-500 to-indigo-500', 
@@ -57,44 +57,12 @@ const GENRES = [
     image: 'https://images.pexels.com/photos/1105666/pexels-photo-1105666.jpeg'
   },
   { 
-    id: '106', 
+    id: '4', 
     name: 'Electronic', 
     icon: Zap, 
     color: 'from-cyan-500 to-blue-500', 
     description: 'Electronic beats and dance rhythms',
     image: 'https://images.pexels.com/photos/1540406/pexels-photo-1540406.jpeg'
-  },
-  { 
-    id: '85', 
-    name: 'Alternative', 
-    icon: Sparkles, 
-    color: 'from-violet-500 to-purple-500', 
-    description: 'Independent and alternative sounds',
-    image: 'https://images.pexels.com/photos/1389429/pexels-photo-1389429.jpeg'
-  },
-  { 
-    id: '165', 
-    name: 'R&B', 
-    icon: Heart, 
-    color: 'from-rose-500 to-pink-500', 
-    description: 'Soulful vocals and smooth grooves',
-    image: 'https://images.pexels.com/photos/1644888/pexels-photo-1644888.jpeg'
-  },
-  { 
-    id: '129', 
-    name: 'Jazz', 
-    icon: Piano, 
-    color: 'from-amber-500 to-yellow-500', 
-    description: 'Improvisation and smooth rhythms',
-    image: 'https://images.pexels.com/photos/164821/pexels-photo-164821.jpeg'
-  },
-  { 
-    id: '144', 
-    name: 'Reggae', 
-    icon: Waves, 
-    color: 'from-green-500 to-lime-500', 
-    description: 'Laid-back Caribbean vibes',
-    image: 'https://images.pexels.com/photos/1407322/pexels-photo-1407322.jpeg'
   },
 ];
 
@@ -121,7 +89,7 @@ export const GenresPage: React.FC = () => {
     data: topTracksByGenreResponse,
     isLoading,
     error
-  } = useTopTracksByGenre(selectedGenre?.id!, 15);
+  } = useTopTracksByGenre(selectedGenre?.id!, 3); // Reducido a 3 tracks por género
 
   const handlePlayTrack = (deezerTrack: any) => {
     try {

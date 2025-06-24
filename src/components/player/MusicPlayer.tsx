@@ -81,10 +81,10 @@ export const MusicPlayer: React.FC<MusicPlayerProps> = ({ className = '' }) => {
     const handleError = (e: Event) => {
       console.error('Audio playback error:', e);
       setIsPlaying(false);
-      // Only show error toast if it's not a CORS or network issue with preview
       const target = e.target as HTMLAudioElement;
       if (target && target.src) {
-        showToast('Preview not available for this track', 'warning');
+        console.log('Failed audio URL:', target.src);
+        showToast('Preview temporarily unavailable', 'warning');
       }
     };
 
@@ -131,17 +131,26 @@ export const MusicPlayer: React.FC<MusicPlayerProps> = ({ className = '' }) => {
     if (!audio || !currentTrack) return;
 
     if (currentTrack.audio_url) {
+      console.log('Loading new track:', currentTrack.title, 'URL:', currentTrack.audio_url);
       audio.src = currentTrack.audio_url;
       audio.load();
       
       if (isPlaying) {
-        audio.play().catch((error) => {
-          console.error('Failed to play new track:', error);
-          setIsPlaying(false);
-        });
+        const playPromise = audio.play();
+        if (playPromise !== undefined) {
+          playPromise.catch((error) => {
+            console.error('Failed to play new track:', error);
+            setIsPlaying(false);
+            showToast('Unable to play audio preview', 'error');
+          });
+        }
       }
+    } else {
+      console.warn('No audio URL for track:', currentTrack.title);
+      showToast('No audio preview available', 'warning');
+      setIsPlaying(false);
     }
-  }, [currentTrack, isPlaying, setIsPlaying]);
+  }, [currentTrack, isPlaying, setIsPlaying, showToast]);
 
   const handleSeek = (time: number) => {
     const audio = audioRef.current;

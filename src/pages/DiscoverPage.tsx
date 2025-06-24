@@ -19,8 +19,8 @@ import { useToast } from '../hooks/useToast';
 
 export const DiscoverPage: React.FC = () => {
   const { useTopTracks, useTrendingPlaylists, deezerService } = useDeezer();
-  const { data: topTracks, isLoading: loadingTracks } = useTopTracks(50);
-  const { data: trendingPlaylists, isLoading: loadingPlaylists } = useTrendingPlaylists(20);
+  const { data: topTracks, isLoading: loadingTracks } = useTopTracks(5); // Reducido a 5 para garantizar carga
+  const { data: trendingPlaylists, isLoading: loadingPlaylists } = useTrendingPlaylists(3); // Reducido a 3
   const { setCurrentTrack, setIsPlaying, addToQueue } = usePlayerStore();
   const { showToast } = useToast();
 

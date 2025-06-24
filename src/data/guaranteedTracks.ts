@@ -39,7 +39,7 @@ export const TOP_3_GUARANTEED_TRACKS: GuaranteedTrack[] = [
       cover_xl: "https://images.pexels.com/photos/1763075/pexels-photo-1763075.jpeg?auto=compress&cs=tinysrgb&w=500"
     },
     duration: 200,
-    preview: "https://commondatastorage.googleapis.com/codeskulptor-assets/Epoq-Lepidoptera.ogg",
+    preview: "https://file-examples.com/storage/fe68c1e7b3f478172cf2ce8/2017/11/file_example_MP3_700KB.mp3",
     rank: 950000
   },
   {
@@ -59,7 +59,7 @@ export const TOP_3_GUARANTEED_TRACKS: GuaranteedTrack[] = [
       cover_xl: "https://images.pexels.com/photos/1644888/pexels-photo-1644888.jpeg?auto=compress&cs=tinysrgb&w=500"
     },
     duration: 178,
-    preview: "https://commondatastorage.googleapis.com/codeskulptor-assets/Epoq-Lepidoptera.ogg",
+    preview: "https://file-examples.com/storage/fe68c1e7b3f478172cf2ce8/2017/11/file_example_MP3_700KB.mp3",
     rank: 920000
   },
   {
@@ -79,7 +79,7 @@ export const TOP_3_GUARANTEED_TRACKS: GuaranteedTrack[] = [
       cover_xl: "https://images.pexels.com/photos/1389429/pexels-photo-1389429.jpeg?auto=compress&cs=tinysrgb&w=500"
     },
     duration: 203,
-    preview: "https://commondatastorage.googleapis.com/codeskulptor-assets/sounddogs/soundtrack.ogg",
+    preview: "https://file-examples.com/storage/fe68c1e7b3f478172cf2ce8/2017/11/file_example_MP3_1MG.mp3",
     rank: 900000
   }
 ];
@@ -103,7 +103,7 @@ export const ADDITIONAL_GUARANTEED_TRACKS: GuaranteedTrack[] = [
       cover_xl: "https://images.pexels.com/photos/1540406/pexels-photo-1540406.jpeg?auto=compress&cs=tinysrgb&w=500"
     },
     duration: 167,
-    preview: "https://commondatastorage.googleapis.com/codeskulptor-assets/week7-button.m4a",
+    preview: "https://file-examples.com/storage/fe68c1e7b3f478172cf2ce8/2017/11/file_example_MP3_2MG.mp3",
     rank: 880000
   },
   {
@@ -123,7 +123,7 @@ export const ADDITIONAL_GUARANTEED_TRACKS: GuaranteedTrack[] = [
       cover_xl: "https://images.pexels.com/photos/1407322/pexels-photo-1407322.jpeg?auto=compress&cs=tinysrgb&w=500"
     },
     duration: 238,
-    preview: "https://commondatastorage.googleapis.com/codeskulptor-assets/sounddogs/electronica.ogg",
+    preview: "https://file-examples.com/storage/fe68c1e7b3f478172cf2ce8/2017/11/file_example_MP3_5MG.mp3",
     rank: 860000
   },
   {
@@ -143,7 +143,7 @@ export const ADDITIONAL_GUARANTEED_TRACKS: GuaranteedTrack[] = [
       cover_xl: "https://images.pexels.com/photos/1105666/pexels-photo-1105666.jpeg?auto=compress&cs=tinysrgb&w=500" 
     },
     duration: 141,
-    preview: "https://commondatastorage.googleapis.com/codeskulptor-assets/sounddogs/thrust.ogg",
+    preview: "https://www.soundjay.com/misc/sounds/bell-ringing-05.wav",
     rank: 840000
   },
   {
@@ -163,7 +163,7 @@ export const ADDITIONAL_GUARANTEED_TRACKS: GuaranteedTrack[] = [
       cover_xl: "https://images.pexels.com/photos/1190297/pexels-photo-1190297.jpeg?auto=compress&cs=tinysrgb&w=500"
     },
     duration: 200,
-    preview: "https://commondatastorage.googleapis.com/codeskulptor-assets/Epoq-Lepidoptera.ogg",
+    preview: "https://file-examples.com/storage/fe68c1e7b3f478172cf2ce8/2017/11/file_example_MP3_700KB.mp3",
     rank: 820000
   },
   {
@@ -183,7 +183,7 @@ export const ADDITIONAL_GUARANTEED_TRACKS: GuaranteedTrack[] = [
       cover_xl: "https://images.pexels.com/photos/1699030/pexels-photo-1699030.jpeg?auto=compress&cs=tinysrgb&w=500"
     },
     duration: 156,
-    preview: "https://commondatastorage.googleapis.com/codeskulptor-assets/sounddogs/missile.ogg",
+    preview: "https://www.learningcontainer.com/wp-content/uploads/2020/02/Kalimba.mp3",
     rank: 800000
   }
 ];
