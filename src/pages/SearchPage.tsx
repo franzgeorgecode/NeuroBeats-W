@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Search, 
@@ -20,17 +20,29 @@ import { LoadingSkeleton } from '../components/ui/LoadingSkeleton';
 import { NeonButton } from '../components/ui/NeonButton';
 import { useToast } from '../hooks/useToast';
 import { useDebounce } from '../hooks/useDebounce';
+import { getSearchResults } from '../data/guaranteedTracks';
 
 export const SearchPage: React.FC = () => {
   const [query, setQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState<'all' | 'track' | 'artist' | 'album'>('all');
   const [showFilters, setShowFilters] = useState(false);
+  const [guaranteedResults, setGuaranteedResults] = useState<any[]>([]);
   
   const debouncedQuery = useDebounce(query, 500);
   const { useSearchSongs, deezerService } = useDeezer();
   const { data: searchResults, isLoading, error } = useSearchSongs(debouncedQuery, 3); // Solo 3 resultados garantizados
   const { setCurrentTrack, setIsPlaying, addToQueue } = usePlayerStore();
   const { showToast } = useToast();
+
+  // Cargar resultados garantizados cuando se busca
+  useEffect(() => {
+    if (debouncedQuery && debouncedQuery.length > 0) {
+      const guaranteed = getSearchResults(debouncedQuery);
+      setGuaranteedResults(guaranteed);
+    } else {
+      setGuaranteedResults([]);
+    }
+  }, [debouncedQuery]);
 
   const handlePlayTrack = (deezerTrack: any) => {
     try {

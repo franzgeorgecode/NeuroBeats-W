@@ -39,7 +39,7 @@ export const TOP_3_GUARANTEED_TRACKS: GuaranteedTrack[] = [
       cover_xl: "https://images.pexels.com/photos/1763075/pexels-photo-1763075.jpeg?auto=compress&cs=tinysrgb&w=500"
     },
     duration: 200,
-    preview: "https://www2.cs.uic.edu/~i101/SoundFiles/BabyElephantWalk60.wav",
+    preview: "https://commondatastorage.googleapis.com/codeskulptor-assets/Epoq-Lepidoptera.ogg",
     rank: 950000
   },
   {
@@ -59,7 +59,7 @@ export const TOP_3_GUARANTEED_TRACKS: GuaranteedTrack[] = [
       cover_xl: "https://images.pexels.com/photos/1644888/pexels-photo-1644888.jpeg?auto=compress&cs=tinysrgb&w=500"
     },
     duration: 178,
-    preview: "https://www2.cs.uic.edu/~i101/SoundFiles/CantinaBand60.wav",
+    preview: "https://commondatastorage.googleapis.com/codeskulptor-assets/Epoq-Lepidoptera.ogg",
     rank: 920000
   },
   {
@@ -79,7 +79,7 @@ export const TOP_3_GUARANTEED_TRACKS: GuaranteedTrack[] = [
       cover_xl: "https://images.pexels.com/photos/1389429/pexels-photo-1389429.jpeg?auto=compress&cs=tinysrgb&w=500"
     },
     duration: 203,
-    preview: "https://www2.cs.uic.edu/~i101/SoundFiles/ImperialMarch60.wav",
+    preview: "https://commondatastorage.googleapis.com/codeskulptor-assets/sounddogs/soundtrack.ogg",
     rank: 900000
   }
 ];
@@ -103,7 +103,7 @@ export const ADDITIONAL_GUARANTEED_TRACKS: GuaranteedTrack[] = [
       cover_xl: "https://images.pexels.com/photos/1540406/pexels-photo-1540406.jpeg?auto=compress&cs=tinysrgb&w=500"
     },
     duration: 167,
-    preview: "https://www2.cs.uic.edu/~i101/SoundFiles/PinkPanther60.wav",
+    preview: "https://commondatastorage.googleapis.com/codeskulptor-assets/week7-button.m4a",
     rank: 880000
   },
   {
@@ -123,7 +123,7 @@ export const ADDITIONAL_GUARANTEED_TRACKS: GuaranteedTrack[] = [
       cover_xl: "https://images.pexels.com/photos/1407322/pexels-photo-1407322.jpeg?auto=compress&cs=tinysrgb&w=500"
     },
     duration: 238,
-    preview: "https://www2.cs.uic.edu/~i101/SoundFiles/StarWars60.wav",
+    preview: "https://commondatastorage.googleapis.com/codeskulptor-assets/sounddogs/electronica.ogg",
     rank: 860000
   },
   {
@@ -143,7 +143,7 @@ export const ADDITIONAL_GUARANTEED_TRACKS: GuaranteedTrack[] = [
       cover_xl: "https://images.pexels.com/photos/1105666/pexels-photo-1105666.jpeg?auto=compress&cs=tinysrgb&w=500" 
     },
     duration: 141,
-    preview: "https://www2.cs.uic.edu/~i101/SoundFiles/Fanfare60.wav",
+    preview: "https://commondatastorage.googleapis.com/codeskulptor-assets/sounddogs/thrust.ogg",
     rank: 840000
   },
   {
@@ -163,7 +163,7 @@ export const ADDITIONAL_GUARANTEED_TRACKS: GuaranteedTrack[] = [
       cover_xl: "https://images.pexels.com/photos/1190297/pexels-photo-1190297.jpeg?auto=compress&cs=tinysrgb&w=500"
     },
     duration: 200,
-    preview: "https://www2.cs.uic.edu/~i101/SoundFiles/BabyElephantWalk60.wav",
+    preview: "https://commondatastorage.googleapis.com/codeskulptor-assets/Epoq-Lepidoptera.ogg",
     rank: 820000
   },
   {
@@ -183,7 +183,7 @@ export const ADDITIONAL_GUARANTEED_TRACKS: GuaranteedTrack[] = [
       cover_xl: "https://images.pexels.com/photos/1699030/pexels-photo-1699030.jpeg?auto=compress&cs=tinysrgb&w=500"
     },
     duration: 156,
-    preview: "https://www2.cs.uic.edu/~i101/SoundFiles/CantinaBand60.wav",
+    preview: "https://commondatastorage.googleapis.com/codeskulptor-assets/sounddogs/missile.ogg",
     rank: 800000
   }
 ];
