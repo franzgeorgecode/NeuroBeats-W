@@ -13,20 +13,17 @@ import { useDeezer } from '../hooks/useDeezer';
 import { usePlayerStore } from '../stores/playerStore';
 import { GlassCard } from '../components/ui/GlassCard';
 import { SongCard } from '../components/ui/SongCard';
-import { PlaylistCard } from '../components/ui/PlaylistCard';
 import { LoadingSkeleton } from '../components/ui/LoadingSkeleton';
 import { useToast } from '../hooks/useToast';
 
 export const DiscoverPage: React.FC = () => {
-  const { useTopTracks, useTrendingPlaylists, deezerService } = useDeezer();
+  const { useTopTracks, deezerService } = useDeezer();
   const { data: topTracks, isLoading: loadingTracks } = useTopTracks(50); // USAR LÓGICA QUE FUNCIONA - MÁS TRACKS
-  const { data: trendingPlaylists, isLoading: loadingPlaylists } = useTrendingPlaylists(20); // MÁS PLAYLISTS
   const { setCurrentTrack, setIsPlaying, addToQueue } = usePlayerStore();
   const { showToast } = useToast();
 
   const [trendingScrollIndex, setTrendingScrollIndex] = useState(0);
   const [newReleasesScrollIndex, setNewReleasesScrollIndex] = useState(0);
-  const [playlistScrollIndex, setPlaylistScrollIndex] = useState(0);
 
   const handlePlayTrack = (deezerTrack: any) => {
     try {
@@ -252,60 +249,6 @@ export const DiscoverPage: React.FC = () => {
           )}
         </motion.section>
 
-        {/* Trending Playlists Section */}
-        <motion.section
-          className="mb-12"
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.3 }}
-        >
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center">
-              <Play className="w-6 h-6 text-neon-cyan mr-3" />
-              <h2 className="text-2xl font-space font-bold text-white">
-                Trending Playlists
-              </h2>
-            </div>
-            <CarouselControls
-              onPrev={() => scrollCarousel('left', setPlaylistScrollIndex, Math.max(0, (trendingPlaylists?.data?.length || 0) - 4))}
-              onNext={() => scrollCarousel('right', setPlaylistScrollIndex, Math.max(0, (trendingPlaylists?.data?.length || 0) - 4))}
-              canPrev={playlistScrollIndex > 0}
-              canNext={playlistScrollIndex < Math.max(0, (trendingPlaylists?.data?.length || 0) - 4)}
-            />
-          </div>
-
-          {loadingPlaylists ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              <LoadingSkeleton variant="playlist" count={4} />
-            </div>
-          ) : (
-            <div className="overflow-hidden">
-              <motion.div
-                className="flex space-x-6"
-                animate={{ x: -playlistScrollIndex * 320 }}
-                transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-              >
-                {trendingPlaylists?.data?.map((playlist) => (
-                  <div key={playlist.id} className="w-80 flex-shrink-0">
-                    <PlaylistCard
-                      playlist={{
-                        id: playlist.id,
-                        title: playlist.title,
-                        description: playlist.description,
-                        creator: playlist.user?.name,
-                        trackCount: playlist.nb_tracks,
-                        duration: playlist.duration,
-                        coverUrl: playlist.picture_xl,
-                        isPublic: playlist.public,
-                        followers: playlist.fans,
-                      }}
-                    />
-                  </div>
-                ))}
-              </motion.div>
-            </div>
-          )}
-        </motion.section>
 
         {/* For You Section */}
         <motion.section

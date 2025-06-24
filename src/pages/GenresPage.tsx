@@ -32,38 +32,21 @@ import { NeonButton } from '../components/ui/NeonButton';
 import { useToast } from '../hooks/useToast';
 
 const GENRES = [
-  { 
-    id: '1', 
-    name: 'Pop', 
-    icon: Star, 
-    color: 'from-pink-500 to-rose-500', 
-    description: 'Catchy melodies and mainstream hits',
-    image: 'https://images.pexels.com/photos/1763075/pexels-photo-1763075.jpeg'
-  },
-  { 
-    id: '2', 
-    name: 'Rock', 
-    icon: Guitar, 
-    color: 'from-red-500 to-orange-500', 
-    description: 'Electric guitars and powerful vocals',
-    image: 'https://images.pexels.com/photos/1190297/pexels-photo-1190297.jpeg'
-  },
-  { 
-    id: '3', 
-    name: 'Hip Hop', 
-    icon: Mic, 
-    color: 'from-purple-500 to-indigo-500', 
-    description: 'Rhythmic beats and rap vocals',
-    image: 'https://images.pexels.com/photos/1105666/pexels-photo-1105666.jpeg'
-  },
-  { 
-    id: '4', 
-    name: 'Electronic', 
-    icon: Zap, 
-    color: 'from-cyan-500 to-blue-500', 
-    description: 'Electronic beats and dance rhythms',
-    image: 'https://images.pexels.com/photos/1540406/pexels-photo-1540406.jpeg'
-  },
+  { id: '1', name: 'Pop', icon: Star, color: 'from-pink-500 to-rose-500', description: 'Catchy melodies and mainstream hits' },
+  { id: '2', name: 'Rock', icon: Guitar, color: 'from-red-500 to-orange-500', description: 'Electric guitars and powerful vocals' },
+  { id: '3', name: 'Hip Hop', icon: Mic, color: 'from-purple-500 to-indigo-500', description: 'Rhythmic beats and rap vocals' },
+  { id: '4', name: 'Electronic', icon: Zap, color: 'from-cyan-500 to-blue-500', description: 'Synthesized sounds and digital beats' },
+  { id: '5', name: 'Classical', icon: Piano, color: 'from-amber-500 to-yellow-500', description: 'Orchestral and instrumental masterpieces' },
+  { id: '6', name: 'Jazz', icon: Headphones, color: 'from-emerald-500 to-teal-500', description: 'Improvisation and smooth rhythms' },
+  { id: '7', name: 'Reggae', icon: Waves, color: 'from-green-500 to-lime-500', description: 'Laid-back Caribbean vibes' },
+  { id: '8', name: 'Country', icon: Crown, color: 'from-orange-500 to-red-500', description: 'Storytelling and acoustic guitars' },
+  { id: '9', name: 'R&B', icon: Heart, color: 'from-rose-500 to-pink-500', description: 'Soulful vocals and smooth grooves' },
+  { id: '10', name: 'Latin', icon: Drum, color: 'from-yellow-500 to-orange-500', description: 'Passionate rhythms and vibrant energy' },
+  { id: '11', name: 'Metal', icon: Volume2, color: 'from-gray-500 to-slate-500', description: 'Heavy guitars and intense energy' },
+  { id: '12', name: 'Indie', icon: Sparkles, color: 'from-violet-500 to-purple-500', description: 'Independent and alternative sounds' },
+  { id: '13', name: 'Folk', icon: Music, color: 'from-stone-500 to-neutral-500', description: 'Traditional and acoustic storytelling' },
+  { id: '14', name: 'Blues', icon: Disc, color: 'from-blue-500 to-indigo-500', description: 'Emotional expression and guitar solos' },
+  { id: '15', name: 'Soul', icon: Radio, color: 'from-indigo-500 to-purple-500', description: 'Deep emotion and powerful vocals' },
 ];
 
 export const GenresPage: React.FC = () => {
@@ -89,7 +72,7 @@ export const GenresPage: React.FC = () => {
     data: topTracksByGenreResponse,
     isLoading,
     error
-  } = useTopTracksByGenre(selectedGenre?.id!, 15); // USAR LÓGICA QUE FUNCIONA - MÁS TRACKS
+  } = useTopTracksByGenre(selectedGenre?.id!, 5); // TOP 5 POR GÉNERO COMO SOLICITA
 
   const handlePlayTrack = (deezerTrack: any) => {
     try {

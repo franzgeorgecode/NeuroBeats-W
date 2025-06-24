@@ -28,20 +28,83 @@ export const SearchPage: React.FC = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [guaranteedResults, setGuaranteedResults] = useState<any[]>([]);
   
-  const debouncedQuery = useDebounce(query, 500);
-  const { useSearchSongs, deezerService } = useDeezer();
-  const { data: searchResults, isLoading, error } = useSearchSongs(debouncedQuery, 25); // Más resultados como en el ejemplo que funciona
+  const debouncedQuery = useDebounce(query, 300); // Más rápido como en el ejemplo
+  const { deezerService } = useDeezer();
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const { setCurrentTrack, setIsPlaying, addToQueue } = usePlayerStore();
   const { showToast } = useToast();
 
-  // Cargar resultados garantizados cuando se busca
+  // USAR LA LÓGICA EXACTA DEL EJEMPLO QUE FUNCIONA PERFECTAMENTE
   useEffect(() => {
-    if (debouncedQuery && debouncedQuery.length > 0) {
-      const guaranteed = getSearchResults(debouncedQuery);
-      setGuaranteedResults(guaranteed);
-    } else {
-      setGuaranteedResults([]);
-    }
+    const searchContent = async () => {
+      if (!debouncedQuery || debouncedQuery.length === 0) {
+        setSearchResults([]);
+        return;
+      }
+
+      setIsLoading(true);
+      setError(null);
+      
+      try {
+        console.log(`🔍 Searching Deezer API for: "${debouncedQuery}"`);
+        
+        // USAR LA MISMA LÓGICA EXACTA DEL EJEMPLO
+        const API_KEY = '065ab6a786mshd6cc9b98e753584p12c9c1jsn58fd2129c9a7';
+        const offset = Math.floor(Math.random() * 100);
+        
+        const response = await fetch(
+          `https://deezerdevs-deezer.p.rapidapi.com/search?q=${debouncedQuery}&index=${offset}&limit=25`,
+          {
+            method: 'GET',
+            headers: {
+              'X-RapidAPI-Key': API_KEY,
+              'X-RapidAPI-Host': 'deezerdevs-deezer.p.rapidapi.com',
+            },
+          }
+        );
+
+        if (!response.ok) throw new Error("API request failed");
+
+        const data = await response.json();
+        console.log('🔍 Search Response:', data);
+        
+        if (data && data.data && data.data.length > 0) {
+          // Mapear al formato que necesitamos igual que en el ejemplo
+          const validSongs = data.data
+            .filter((track: any) => track.preview && track.preview.length > 0)
+            .map((track: any) => ({
+              id: track.id,
+              title: track.title,
+              artist: { name: track.artist.name },
+              album: { 
+                title: track.album.title,
+                cover_xl: track.album.cover_xl,
+                cover_big: track.album.cover_big,
+                cover_medium: track.album.cover_medium
+              },
+              duration: track.duration,
+              preview: track.preview,
+              rank: track.rank || Math.floor(Math.random() * 1000000),
+            }));
+          
+          setSearchResults(validSongs);
+          console.log(`✅ Found ${validSongs.length} valid search results`);
+        } else {
+          setSearchResults([]);
+          console.log('❌ No search results found');
+        }
+      } catch (error) {
+        console.error("❌ Search error:", error);
+        setError('Search failed. Please try again.');
+        setSearchResults([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    searchContent();
   }, [debouncedQuery]);
 
   const handlePlayTrack = (deezerTrack: any) => {
@@ -74,11 +137,11 @@ export const SearchPage: React.FC = () => {
     setQuery(searchTerm);
   };
 
-  const filteredResults = searchResults?.data?.filter(track => {
+  const filteredResults = searchResults.filter(track => {
     if (activeFilter === 'all') return true;
     // For now, we only have tracks from the API
     return activeFilter === 'track';
-  }) || [];
+  });
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-dark-500 via-dark-600 to-dark-700 pt-24 pb-32">
@@ -298,7 +361,7 @@ export const SearchPage: React.FC = () => {
                           artist: track.artist.name,
                           album: track.album?.title,
                           duration: track.duration,
-                          cover_url: track.album?.cover_xl || track.album?.cover_big,
+                          cover_url: track.album?.cover_xl || track.album?.cover_big || track.album?.cover_medium,
                           audio_url: track.preview,
                           plays_count: track.rank,
                         }}
