@@ -46,8 +46,8 @@ export const TrendingPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'tracks' | 'playlists'>('tracks');
 
   const { useTopTracks, useTrendingPlaylists, deezerService } = useDeezer();
-  const { data: topTracks, isLoading: loadingTracks } = useTopTracks(5); // Reducido a 5 para garantizar carga
-  const { data: trendingPlaylists, isLoading: loadingPlaylists } = useTrendingPlaylists(3); // Reducido a 3
+  const { data: topTracks, isLoading: loadingTracks } = useTopTracks(20); // USAR LÓGICA QUE FUNCIONA
+  const { data: trendingPlaylists, isLoading: loadingPlaylists } = useTrendingPlaylists(15); // MAYOR CANTIDAD
   const { setCurrentTrack, setIsPlaying, addToQueue } = usePlayerStore();
   const { showToast } = useToast();
 
@@ -221,13 +221,10 @@ export const TrendingPage: React.FC = () => {
         >
           {activeTab === 'tracks' ? (
             <div>
-              <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center mb-6">
                 <h2 className="text-2xl font-space font-bold text-white">
-                  Top 50 - {selectedCountry.name} ({selectedPeriod.label})
+                  Top Charts - {selectedCountry.name}
                 </h2>
-                <span className="text-gray-400">
-                  {topTracks?.data?.length || 0} tracks
-                </span>
               </div>
 
               {loadingTracks ? (
@@ -236,7 +233,7 @@ export const TrendingPage: React.FC = () => {
                 </div>
               ) : (
                 <div className="space-y-2">
-                  {topTracks?.data?.slice(0, 50).map((track, index) => (
+                  {topTracks?.data?.map((track, index) => (
                     <motion.div
                       key={track.id}
                       initial={{ opacity: 0, x: -20 }}

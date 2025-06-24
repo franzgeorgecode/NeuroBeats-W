@@ -329,24 +329,54 @@ class DeezerService {
     return this.queryClient.fetchQuery({
       queryKey: cacheKey,
       queryFn: async () => {
-        console.log('📈 Fetching trending playlists...');
-        
-        // Usar términos que garanticen buenos resultados de Deezer
-        const trendingQueries = [
-          'global top 50',
-          'trending now',
-          'viral hits 2024',
-          'chart toppers',
-          'most popular songs'
-        ];
-        
-        const randomQuery = trendingQueries[Math.floor(Math.random() * trendingQueries.length)];
-        console.log(`📈 Using trending query: "${randomQuery}"`);
-        
-        return await this.searchSongs(randomQuery, limit);
+        try {
+          console.log('📈 Fetching trending playlists...');
+          
+          // USAR LA MISMA ESTRATEGIA QUE FUNCIONA: BUSCAR GÉNEROS POPULARES
+          const popularQueries = ["hits 2024", "pop", "electronic", "rock"];
+          const selectedQuery = popularQueries[Math.floor(Math.random() * popularQueries.length)];
+          const offset = Math.floor(Math.random() * 50);
+          
+          console.log(`📈 Using trending query: "${selectedQuery}" with offset: ${offset}`);
+          
+          const result = await this.makeRequest<DeezerSearchResponse>('/search', {
+            q: selectedQuery,
+            limit: Math.min(limit, 25).toString(),
+            index: offset.toString(),
+          });
+          
+          console.log('📈 Trending Playlists API Response:', result);
+          
+          // Filtrar tracks con preview válido
+          if (result.data && result.data.length > 0) {
+            const validTracks = result.data.filter(track => {
+              return track.preview && track.preview.length > 0 && track.title && track.artist?.name;
+            });
+            
+            console.log(`🎉 Found ${validTracks.length} valid trending tracks from Deezer API`);
+            
+            if (validTracks.length > 0) {
+              return {
+                ...result,
+                data: validTracks.slice(0, Math.min(limit, validTracks.length))
+              };
+            }
+          }
+          
+          throw new Error('No valid trending tracks with previews from Deezer API');
+          
+        } catch (apiError) {
+          console.error('❌ Trending Playlists API failed:', apiError);
+          
+          // Solo usar fallback si la API falla completamente
+          console.log('🔄 Using guaranteed trending fallback...');
+          const guaranteedTracks = getTop3Tracks();
+          return convertToResponseFormat(guaranteedTracks);
+        }
       },
       staleTime: 30 * 60 * 1000,
       gcTime: 60 * 60 * 1000,
+      retry: 1,
     });
   }
 
@@ -386,60 +416,67 @@ class DeezerService {
     });
   }
 
-  async getTopTracks(limit: number = 50): Promise<DeezerSearchResponse> {
-    const cacheKey = ['deezer', 'top-tracks', limit];
+  async getTopTracks(limit: number = 6): Promise<DeezerSearchResponse> {
+    const cacheKey = ['deezer', 'dashboard-top-tracks', limit];
     
     return this.queryClient.fetchQuery({
       queryKey: cacheKey,
       queryFn: async () => {
         try {
-          // USAR LA MISMA ESTRATEGIA QUE FUNCIONA: BUSCAR GÉNEROS POPULARES
-          console.log('🎵 Fetching top tracks from Deezer API...');
+          // ESTRATEGIA GANADORA: 2 CANCIONES POR GÉNERO (3 GÉNEROS = 6 TOTAL)
+          console.log('🎵 Fetching top tracks for dashboard: 2 per genre, max 6 total');
           
-          const popularGenres = ["pop", "rock", "hip hop", "electronic"];
-          const selectedGenre = popularGenres[Math.floor(Math.random() * popularGenres.length)];
-          const offset = Math.floor(Math.random() * 100); // Offset aleatorio para variedad
+          const genres = ["pop", "rock", "electronic"];
+          const allTracks: DeezerTrack[] = [];
           
-          console.log(`🎨 Using genre: ${selectedGenre} with offset: ${offset}`);
-          
-          const result = await this.makeRequest<DeezerSearchResponse>('/search', {
-            q: selectedGenre,
-            limit: Math.min(limit, 50).toString(),
-            index: offset.toString(),
-          });
-          
-          console.log('🎵 Deezer API Response:', result);
-          
-          // Filtrar tracks con preview válido
-          if (result.data && result.data.length > 0) {
-            const validTracks = result.data.filter(track => {
-              return track.preview && track.preview.length > 0 && track.title && track.artist?.name;
-            });
-            
-            console.log(`🎉 Found ${validTracks.length} valid top tracks from Deezer API`);
-            
-            if (validTracks.length > 0) {
-              return {
-                ...result,
-                data: validTracks.slice(0, Math.min(limit, validTracks.length))
-              };
+          // Buscar 2 canciones por cada género
+          for (const genre of genres) {
+            try {
+              const offset = Math.floor(Math.random() * 50); // Menor offset para mejores resultados
+              console.log(`🎨 Fetching 2 ${genre} tracks with offset: ${offset}`);
+              
+              const result = await this.makeRequest<DeezerSearchResponse>('/search', {
+                q: genre,
+                limit: '10', // Buscar 10 para filtrar los 2 mejores
+                index: offset.toString(),
+              });
+              
+              if (result.data && result.data.length > 0) {
+                // Filtrar solo tracks con preview válido y tomar los 2 mejores
+                const validTracks = result.data
+                  .filter(track => track.preview && track.preview.length > 0 && track.title && track.artist?.name)
+                  .slice(0, 2); // MÁXIMO 2 POR GÉNERO
+                
+                allTracks.push(...validTracks);
+                console.log(`✅ Added ${validTracks.length} ${genre} tracks`);
+              }
+            } catch (genreError) {
+              console.warn(`Genre ${genre} failed, skipping:`, genreError);
             }
           }
           
-          throw new Error('No valid tracks with previews from Deezer API');
+          if (allTracks.length > 0) {
+            console.log(`🎉 Dashboard Top Tracks: ${allTracks.length} tracks ready to play`);
+            return {
+              data: allTracks.slice(0, 6), // GARANTIZAR MÁXIMO 6
+              total: allTracks.length,
+            };
+          }
+          
+          throw new Error('No valid dashboard tracks found');
           
         } catch (apiError) {
-          console.error('❌ Deezer API failed:', apiError);
+          console.error('❌ Dashboard tracks API failed:', apiError);
           
-          // Solo usar fallback si la API falla completamente
-          console.log('🔄 Using guaranteed fallback tracks...');
-          const guaranteedTracks = getTop3Tracks();
+          // Fallback garantizado
+          console.log('🔄 Using guaranteed dashboard tracks...');
+          const guaranteedTracks = getTop3Tracks().slice(0, 6);
           return convertToResponseFormat(guaranteedTracks);
         }
       },
-      staleTime: 5 * 60 * 1000,
-      gcTime: 15 * 60 * 1000,
-      retry: 1, // Un solo retry para ser más rápido
+      staleTime: 2 * 60 * 1000, // 2 minutos más fresco
+      gcTime: 5 * 60 * 1000,
+      retry: 0, // Sin retry para carga rápida
     });
   }
 

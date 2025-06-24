@@ -89,7 +89,7 @@ export const GenresPage: React.FC = () => {
     data: topTracksByGenreResponse,
     isLoading,
     error
-  } = useTopTracksByGenre(selectedGenre?.id!, 3); // Reducido a 3 tracks por género
+  } = useTopTracksByGenre(selectedGenre?.id!, 15); // USAR LÓGICA QUE FUNCIONA - MÁS TRACKS
 
   const handlePlayTrack = (deezerTrack: any) => {
     try {

@@ -30,7 +30,7 @@ export const SearchPage: React.FC = () => {
   
   const debouncedQuery = useDebounce(query, 500);
   const { useSearchSongs, deezerService } = useDeezer();
-  const { data: searchResults, isLoading, error } = useSearchSongs(debouncedQuery, 3); // Solo 3 resultados garantizados
+  const { data: searchResults, isLoading, error } = useSearchSongs(debouncedQuery, 25); // Más resultados como en el ejemplo que funciona
   const { setCurrentTrack, setIsPlaying, addToQueue } = usePlayerStore();
   const { showToast } = useToast();
 
@@ -239,13 +239,10 @@ export const SearchPage: React.FC = () => {
           ) : (
             // Search results
             <div>
-              <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center mb-6">
                 <h2 className="text-2xl font-space font-bold text-white">
-                  Top 11 Results for "{query}"
+                  Search Results for "{query}"
                 </h2>
-                <span className="text-gray-400">
-                  {filteredResults.length} tracks with 30s previews
-                </span>
               </div>
 
               {isLoading ? (
@@ -287,7 +284,7 @@ export const SearchPage: React.FC = () => {
                 </GlassCard>
               ) : (
                 <div className="space-y-2">
-                  {filteredResults.slice(0, 11).map((track, index) => (
+                  {filteredResults.map((track, index) => (
                     <motion.div
                       key={track.id}
                       initial={{ opacity: 0, x: -20 }}
