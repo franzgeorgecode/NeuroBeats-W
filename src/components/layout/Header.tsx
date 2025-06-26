@@ -13,6 +13,7 @@ import { useUser } from '@clerk/clerk-react';
 import { useAppStore } from '../../stores/appStore';
 import { GlassCard } from '../ui/GlassCard';
 import { NeonButton } from '../ui/NeonButton';
+import { BoltBadge } from '../ui/BoltBadge';
 
 export const Header: React.FC = () => {
   const { toggleSidebar, currentPage, setCurrentPage } = useAppStore();
@@ -131,6 +132,7 @@ export const Header: React.FC = () => {
 
         {/* Right Section */}
         <div className="flex items-center space-x-4">
+          <BoltBadge variant="white" size="md" className="mr-2" />
           {user ? (
             <>
               {/* Quick Search Button */}
